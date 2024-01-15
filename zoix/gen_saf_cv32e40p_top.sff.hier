@@ -1,0 +1,65 @@
+Version("1.1")
+Date("01/08/24 11:12:16")
+User("s319857")
+Tool("FMGR")
+Info("  Type:    Fault Coverage Report")
+Info("  Version: T-2022.06-SP2 (64-bit, Nov 15 2022)")
+Info("  Models:  All")
+Info("  Classes: All")
+
+FunctionalBlocks{
+     1 design {
+           1  sbst 0ps {F:10760 ND:1621 DD:2762 PD:2 NC:447 NO:5928}
+    }
+}
+
+FaultInfo{
+    FubNum;
+    TestNum;
+    Attempts;
+    NumPot;
+}
+
+FaultList{
+
+Total             ND             DD           PD            NC             NO           UU Scope
+----- -------------- -------------- ------------ ------------- -------------- ------------ -----
+17930 2411  (13.45%) 4688  (26.15%)  3   (0.02%) 975   (5.44%) 9853  (54.95%) 62   (0.35%) cv32e40p_top
+17930 2411  (13.45%) 4688  (26.15%)  3   (0.02%) 975   (5.44%) 9853  (54.95%) 62   (0.35%) -core_i
+17930 2411  (13.45%) 4688  (26.15%)  3   (0.02%) 975   (5.44%) 9853  (54.95%) 62   (0.35%) --ex_stage_i
+17930 2411  (13.45%) 4688  (26.15%)  3   (0.02%) 975   (5.44%) 9853  (54.95%) 62   (0.35%) ---alu_i (1363 hidden instances, 11242 faults)
+ 5916    3   (0.05%)    9   (0.15%)  3   (0.05%)  10   (0.17%) 5891  (99.58%) 56   (0.95%) ----alu_div_i (775 hidden instances, 5916 faults)
+  432    0   (0.00%)    0   (0.00%)  0   (0.00%)   0   (0.00%)  432 (100.00%)  0   (0.00%) ----ff_one_i (63 hidden instances, 432 faults)
+  340    0   (0.00%)    0   (0.00%)  0   (0.00%)   0   (0.00%)  340 (100.00%)  0   (0.00%) ----popcnt_i (39 hidden instances, 340 faults)
+}
+#------------------------------------------------------------------------------
+# Faults listed:       Prime: 0        Total: 0
+#------------------------------------------------------------------------------
+# Fault Coverage Summary
+#
+#                                        Prime             Total
+#------------------------------------------------------------------------------
+# Total Faults:                          10760             17930
+#
+# Dropped Detected                 DD     2762  25.67%      4688  26.15%
+# Dropped Potential                PD        2   0.02%         3   0.02%
+# Not Detected                     ND     1621  15.07%      2411  13.45%
+# Not Observed                     NO     5928  55.09%      9853  54.95%
+# Not Controlled                   NC      447   4.15%       975   5.44%
+#
+# Untestable Unused                UU       62                62        
+#
+# Faults not detected yet:
+#   Not simulated yet:                    6375  59.25%     10828  60.39%
+#   Simulated 1 to 5 times:               1623  15.08%      2414  13.46%
+#   Simulated 6 to 10 times:                 0   0.00%         0   0.00%
+#   Simulated > 10 times:                    0   0.00%         0   0.00%
+#
+# Faults potentially detected:
+#   Possible 1 to 5 times:                   2   0.02%         3   0.02%
+#   Possible 6 to 10 times:                  0   0.00%         0   0.00%
+#   Possible > 10 times:                     0   0.00%         0   0.00%
+#
+# Test Coverage                                 25.68%            26.15%
+# Fault Coverage                                25.53%            26.06%
+#------------------------------------------------------------------------------

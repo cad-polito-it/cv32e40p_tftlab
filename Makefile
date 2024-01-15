@@ -70,7 +70,7 @@ help::
 	@printf "\033[1mCross Compile\033[0m\n"
 	@printf "\033[31m\tcompile_sbst\033[39m Cross-Compiles your STL for the CV32E40P RISC-V ISA.\n"
 	@printf "\033[1mLogic Simulation\033[0m\n"
-	@printf "\033[31m\tquesta/lsim/compile\033[39m Invokes Siemens QuestaSIM to compile CV32E40P RT-level and Gate-level descriptions for functional logic simulation\n"
+	@printf "\033[31m\tquesta/compile\033[39m Invokes Siemens QuestaSIM to compile CV32E40P RT-level and Gate-level descriptions for functional logic simulation\n"
 	@printf "\033[31m\tquesta/lsim/compile-timing\033[39m Invokes Siemens QuestaSIM to compile CV32E40P RT-level and Gate-level descriptions for timing logic simulation\n"
 	@printf "\033[31m\tquesta/lsim/rtl/shell\033[39m Invokes QuestaSIM to perform an RT-level simulation of the sbst in shell mode.\n"
 	@printf "\033[31m\tquesta/lsim/rtl/gui\033[39m Invokes QuestaSIM to perform an RT-level simulation of the sbst in gui mode.\n"
