@@ -14,7 +14,8 @@ module cv32e40p_voter_generic
     always_comb begin
         if (res1 == res2) begin
             result_o <= res1;
-        else
+        end
+        else begin
             result_o <= res3;
         end
     end

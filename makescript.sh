@@ -2,7 +2,7 @@ make synthesis/nangate45
 make compile_sbst
 make questa/compile
 make questa/lsim/rtl/shell
-# make questa/lsim/gate/shell
+make questa/lsim/gate/shell
 # make questa/lsim/gate-timing/shell
 make zoix/compile
 # make zoix/compile-timing
