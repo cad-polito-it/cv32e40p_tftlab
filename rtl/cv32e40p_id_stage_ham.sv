@@ -251,7 +251,13 @@ module cv32e40p_id_stage
     output logic mhpmevent_pipe_stall_o,
 
     input logic        perf_imiss_i,
-    input logic [31:0] mcounteren_i
+    input logic [31:0] mcounteren_i,
+
+
+    //output addeded from me
+    output logic DoubleErrorDetection_1,
+    output logic DoubleErrorDetection_2,
+    output logic DoubleErrorDetection_3
 );
 
   // Source/Destination register instruction index
@@ -489,6 +495,15 @@ module cv32e40p_id_stage
   logic [ 37:0]      hamming_code_signal_1 ;
   logic [ 37:0]      hamming_code_signal_2 ;
 
+  logic [ 37:0]      recomputed_ham_code_signal_1 ;
+  logic [ 37:0]      recomputed_ham_code_signal_2 ;
+  logic [ 37:0]      recomputed_ham_code_signal_3 ;
+
+  logic [ 37:0]      regfile_data_ra_id_preCheck ;
+  logic [ 37:0]      regfile_data_rb_id_preCheck ;
+  logic [ 37:0]      regfile_data_rc_id_preCheck ;
+
+  
   assign instr = instr_rdata_i;
 
 
@@ -950,9 +965,51 @@ cv32e40p_hammingGenerator hamming_generator_2 (
     .hamming_code(hamming_code_signal_2) // Replace hamming_code_signal with the actual signal name
 );
 
+//for first read port, for recomputation of parity bits
+
+cv32e40p_hammingGenerator hamming_generator_3 (
+    .data_in(regfile_data_ra_id_preCheck[37:32, 30:16, 14:8, 6:4, 2 ] ),         
+    .hamming_code(recomputed_ham_code_signal_1) // Replace hamming_code_signal with the actual signal name
+);
+
+//for second read port, for recomputation of parity bits
+
+cv32e40p_hammingGenerator hamming_generator_4 (
+    .data_in(regfile_data_rb_id_preCheck[37:32, 30:16, 14:8, 6:4, 2 ]),         
+    .hamming_code(recomputed_ham_code_signal_2) // Replace hamming_code_signal with the actual signal name
+);
+
+//for third read port, for recomputation of parity bits
+
+cv32e40p_hammingGenerator hamming_generator_5 (
+    .data_in(regfile_data_rc_id_preCheck[37:32, 30:16, 14:8, 6:4, 2 ]),         
+    .hamming_code(recomputed_ham_code_signal_3) // Replace hamming_code_signal with the actual signal name
+);
+
+cv32e40p_errorChecking_ham errorChecking_ham_1 (
+    .data_in_from_RF(regfile_data_ra_id_preCheck),
+    .recomputed_input(recomputed_ham_code_signal_1),
+    .data_Out(regfile_data_ra_id),
+    .RF_double_Error(DoubleErrorDetection_1)
+);
+
+cv32e40p_errorChecking_ham errorChecking_ham_2 (
+    .data_in_from_RF(regfile_data_rb_id_preCheck),
+    .recomputed_input(recomputed_ham_code_signal_2),
+    .data_Out(regfile_data_rb_id),
+    .RF_double_Error(DoubleErrorDetection_2)
+);
+
+cv32e40p_errorChecking_ham errorChecking_ham_3 (
+    .data_in_from_RF(regfile_data_rc_id_preCheck),
+    .recomputed_input(recomputed_ham_code_signal_3),
+    .data_Out(regfile_data_rc_id),
+    .RF_double_Error(DoubleErrorDetection_3)
+);
+
   cv32e40p_register_file #(
       .ADDR_WIDTH(6),
-      .DATA_WIDTH(32),
+      .DATA_WIDTH(38),
       .FPU       (FPU),
       .ZFINX     (ZFINX)
   ) register_file_i (
@@ -963,15 +1020,15 @@ cv32e40p_hammingGenerator hamming_generator_2 (
 
       // Read port a
       .raddr_a_i(regfile_addr_ra_id),
-      .rdata_a_o(regfile_data_ra_id),
+      .rdata_a_o(regfile_data_ra_id_preCheck),
 
       // Read port b
       .raddr_b_i(regfile_addr_rb_id),
-      .rdata_b_o(regfile_data_rb_id),
+      .rdata_b_o(regfile_data_rb_id_preCheck),
 
       // Read port c
       .raddr_c_i(regfile_addr_rc_id),
-      .rdata_c_o(regfile_data_rc_id),
+      .rdata_c_o(regfile_data_rc_id_preCheck),
 
       // Write port a
       .waddr_a_i(regfile_waddr_wb_i),
