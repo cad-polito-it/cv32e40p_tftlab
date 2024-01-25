@@ -25,6 +25,9 @@
 
 package cv32e40p_pkg;
 
+  parameter ALU_FAULTY_SIM = 1'b0;
+  parameter MULT_FAULTY_SIM = 1'b0;
+
   ////////////////////////////////////////////////
   //    ___         ____          _             //
   //   / _ \ _ __  / ___|___   __| | ___  ___   //

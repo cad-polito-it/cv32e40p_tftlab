@@ -945,7 +945,7 @@ module cv32e40p_core
   //   Control and Status Registers   //
   //////////////////////////////////////
 
-  cv32e40p_cs_registers_tmr #(
+  cv32e40p_cs_registers #(
       .N_HWLP          (N_HWLP),
       .A_EXTENSION     (A_EXTENSION),
       .FPU             (FPU),

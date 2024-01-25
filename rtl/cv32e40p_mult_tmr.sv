@@ -37,6 +37,11 @@ module cv32e40p_mult_tmr
 
 parameter NUM_INSTANCES = 3;
 
+logic [31:0] result_o_data, result_o_faulty;
+logic multicycle_o_data, multicycle_o_faulty;
+logic mulh_active_o_data, mulh_active_o_faulty;
+logic ready_o_data, ready_o_faulty;
+
 logic [31:0] result_o_tmr[NUM_INSTANCES];
 logic multicycle_o_tmr[NUM_INSTANCES];
 logic mulh_active_o_tmr[NUM_INSTANCES];
@@ -74,28 +79,46 @@ genvar i;
     .res1(result_o_tmr[0]),
     .res2(result_o_tmr[1]),
     .res3(result_o_tmr[2]),
-    .result_o(result_o)
+    .result_o(result_o_data),
+	.faulty_o(result_o_faulty)
   );
 
   cv32e40p_voter voter_2 (
     .res1(multicycle_o_tmr[0]),
     .res2(multicycle_o_tmr[1]),
     .res3(multicycle_o_tmr[2]),
-    .result_o(multicycle_o)
+    .result_o(multicycle_o_data),
+	.faulty_o(multicycle_o_faulty)
   );
 
   cv32e40p_voter voter_3 (
     .res1(mulh_active_o_tmr[0]),
     .res2(mulh_active_o_tmr[1]),
     .res3(mulh_active_o_tmr[2]),
-    .result_o(ready_o)
+    .result_o(mulh_active_o_data),
+	.faulty_o(mulh_active_o_faulty)
   );
 
   cv32e40p_voter voter_4 (
     .res1(ready_o_tmr[0]),
     .res2(ready_o_tmr[1]),
     .res3(ready_o_tmr[2]),
-    .result_o(ready_o)
+    .result_o(ready_o_data),
+	.faulty_o(ready_o_faulty)
   );
 
+	always_comb begin
+        if (MULT_FAULTY_SIM == 0) begin
+            result_o = result_o_data;
+			multicycle_o = multicycle_o_data;
+			mulh_active_o = mulh_active_o_data;
+			ready_o = ready_o_data;
+		end
+        else if (MULT_FAULTY_SIM == 1) begin
+            result_o = result_o_faulty;
+			multicycle_o = multicycle_o_faulty;
+			mulh_active_o = mulh_active_o_faulty;
+			ready_o = ready_o_faulty;
+		end
+   end
 endmodule

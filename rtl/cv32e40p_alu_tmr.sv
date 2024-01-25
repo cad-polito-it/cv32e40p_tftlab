@@ -25,9 +25,9 @@ module cv32e40p_alu_tmr
     input  logic ex_ready_i
 );
 
-logic [31:0]  result_o_1, result_o_2, result_o_3;
-logic         cmp_result_1, cmp_result_2, cmp_result_3;
-logic         ready_1, ready_2, ready_3;
+logic [31:0]  result_o_1, result_o_2, result_o_3, result_o_faulty, result_o_data;
+logic         cmp_result_1, cmp_result_2, cmp_result_3, comparison_result_o_faulty, comparison_result_o_data;
+logic         ready_1, ready_2, ready_3, ready_o_faulty, ready_o_data;
 
 cv32e40p_alu alu_1 (
       .clk        (clk),
@@ -108,21 +108,37 @@ cv32e40p_alu alu_3 (
     .res1(result_o_1),
     .res2(result_o_2),
     .res3(result_o_3),
-    .result_o(result_o)
+    .result_o(result_o_data),
+    .faulty_o(result_o_faulty)
   );
 
   cv32e40p_voter voter_2 (
     .res1(cmp_result_1),
     .res2(cmp_result_2),
     .res3(cmp_result_3),
-    .result_o(comparison_result_o)
+    .result_o(comparison_result_o_data),
+	.faulty_o(comparison_result_o_faulty)
   );
 
   cv32e40p_voter voter_3 (
     .res1(ready_1),
     .res2(ready_2),
     .res3(ready_3),
-    .result_o(ready_o)
+    .result_o(ready_o_data),
+	.faulty_o(ready_o_faulty)
   );
 
+  always_comb begin
+        if (ALU_FAULTY_SIM == 0) begin
+            result_o = result_o_data;
+			comparison_result_o = comparison_result_o_data;
+			ready_o = ready_o_data;
+		end
+        else if (ALU_FAULTY_SIM == 1) begin
+            result_o = result_o_faulty;
+			comparison_result_o = comparison_result_o_faulty;
+			ready_o = ready_o_faulty;
+		end
+   end
+ 
 endmodule
