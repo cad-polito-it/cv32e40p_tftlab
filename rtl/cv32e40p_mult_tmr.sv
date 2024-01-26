@@ -1,6 +1,8 @@
 module cv32e40p_mult_tmr
   import cv32e40p_pkg::*;
-(
+#(
+ 	parameter MULT_FAULTY_SIM = 0
+)(
     input logic clk,
     input logic rst_n,
 

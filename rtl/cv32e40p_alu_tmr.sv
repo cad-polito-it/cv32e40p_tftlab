@@ -1,6 +1,8 @@
 module cv32e40p_alu_tmr
   import cv32e40p_pkg::*;
-(
+#(
+    parameter ALU_FAULTY_SIM = 1
+)(
     input logic               clk,
     input logic               rst_n,
     input logic               enable_i,

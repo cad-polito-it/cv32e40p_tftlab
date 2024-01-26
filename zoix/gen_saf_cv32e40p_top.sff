@@ -10,7 +10,7 @@
 # Set fault generation constraints
 FaultGenerate
 {
-    NA [0,1] { PORT "cv32e40p_top.core_i.ex_stage_i.alu_i.**" } 
+    #NA [0,1] { PORT "cv32e40p_top.core_i.ex_stage_i.alu_i.**" } 
     #NA [0,1] { PORT "cv32e40p_top.core_i.**" } 
-    #NA [0,1] { PORT "cv32e40p_top.**" }  
+    NA [0,1] { PORT "cv32e40p_top.**" }  
 }

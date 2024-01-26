@@ -260,7 +260,7 @@ module cv32e40p_ex_stage
   //                        //
   ////////////////////////////
 
-  cv32e40p_alu alu_i (
+  cv32e40p_alu_tmr alu_i (
       .clk        (clk),
       .rst_n      (rst_n),
       .enable_i   (alu_en_i),
