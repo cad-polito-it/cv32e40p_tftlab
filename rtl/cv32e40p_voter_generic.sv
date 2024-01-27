@@ -8,23 +8,22 @@ module cv32e40p_voter_generic
     input logic [WIDTH-1:0] res3,
 
 	output logic [WIDTH-1:0] result_o,
-    output logic [WIDTH-1:0] faulty_o
+    output logic faulty_o
 );
 
     // behavioral implementation
-    always_comb begin
+   always_comb begin
+		faulty_o <= 1'b0;
         if (res1 == res2) begin
-            result_o <= res1;
-            faulty_o <= res3;
+			if (res1 != res3) begin
+				faulty_o <= 1'b1;
+			end
+			result_o <= res1;
         end
-        else if (res1 == res3 ) begin
-            result_o <= res1;
-            faulty_o <= res2;
+        else begin
+			faulty_o <= 1'b1;
+			result_o <= res3;	
 		end
-        else begin 
-            result_o <= res2;
-            faulty_o <= res1;
-        end
-    end
+	end
 endmodule
 

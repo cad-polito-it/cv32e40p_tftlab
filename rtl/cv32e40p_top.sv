@@ -64,7 +64,10 @@ module cv32e40p_top #(
 
     // CPU Control Signals
     input  logic fetch_enable_i,
-    output logic core_sleep_o
+    output logic core_sleep_o,
+	output logic top_alu_faulty_1,
+	output logic top_alu_faulty_2,
+	output logic top_alu_faulty_3
 );
 
   import cv32e40p_apu_core_pkg::*;
@@ -138,7 +141,11 @@ module cv32e40p_top #(
       .debug_halted_o   (debug_halted_o),
 
       .fetch_enable_i(fetch_enable_i),
-      .core_sleep_o  (core_sleep_o)
+      .core_sleep_o  (core_sleep_o),
+
+	  .core_ex_alu_faulty_1(top_alu_faulty_1),
+	  .core_ex_alu_faulty_2(top_alu_faulty_2),
+	  .core_ex_alu_faulty_3(top_alu_faulty_3)
   );
 
   generate

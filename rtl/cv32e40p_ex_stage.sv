@@ -161,7 +161,11 @@ module cv32e40p_ex_stage
 
     output logic ex_ready_o,  // EX stage ready for new data
     output logic ex_valid_o,  // EX stage gets new data
-    input  logic wb_ready_i  // WB stage ready for new data
+    input  logic wb_ready_i,  // WB stage ready for new data
+
+	output logic ex_alu_faulty_1,
+	output logic ex_alu_faulty_2,
+ 	output logic ex_alu_faulty_3
 );
 
   logic [                31:0] alu_result;
@@ -282,7 +286,11 @@ module cv32e40p_ex_stage
       .comparison_result_o(alu_cmp_result),
 
       .ready_o   (alu_ready),
-      .ex_ready_i(ex_ready_o)
+      .ex_ready_i(ex_ready_o),
+		
+	  .faulty_o_1(ex_alu_faulty_1),
+	  .faulty_o_2(ex_alu_faulty_2),
+	  .faulty_o_3(ex_alu_faulty_3)
   );
 
 
@@ -295,7 +303,7 @@ module cv32e40p_ex_stage
   //                                                            //
   ////////////////////////////////////////////////////////////////
 
-  cv32e40p_mult_tmr mult_i (
+  cv32e40p_mult mult_i (
       .clk  (clk),
       .rst_n(rst_n),
 
