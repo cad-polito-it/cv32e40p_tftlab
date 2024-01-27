@@ -38,6 +38,28 @@ initial begin
                 $fs_strobe(`TOPLEVEL.data_wdata_o);
                 $fs_strobe(`TOPLEVEL.data_be_o);
 
+				// PART1
+
+				//$fs_strobe(`TOPLEVEL.core_i.ex_stage_i.alu_i.alu_1.result_o);
+				//$fs_strobe(`TOPLEVEL.core_i.ex_stage_i.alu_i.alu_1.comparison_result_o);
+				//$fs_strobe(`TOPLEVEL.core_i.ex_stage_i.alu_i.alu_1.ready_o);
+
+				//PART2
+
+				//$fs_strobe(`TOPLEVEL.core_i.ex_stage_i.alu_i.result_o);
+				//$fs_strobe(`TOPLEVEL.core_i.ex_stage_i.alu_i.comparison_result_o);
+				//$fs_strobe(`TOPLEVEL.core_i.ex_stage_i.alu_i.ready_o);
+
+				//PART3
+				
+				//$fs_strobe(`TOPLEVEL.top_alu_faulty_1);
+				//$fs_strobe(`TOPLEVEL.top_alu_faulty_2);
+				//$fs_strobe(`TOPLEVEL.top_alu_faulty_3);
+
+				//$fs_strobe(`TOPLEVEL.core_i.ex_stage_i.alu_i.faulty_o_1);
+				//$fs_strobe(`TOPLEVEL.core_i.ex_stage_i.alu_i.faulty_o_2);
+				//$fs_strobe(`TOPLEVEL.core_i.ex_stage_i.alu_i.faulty_o_3);
+				
                 #10000; // TMAX Strobe period
         end
 

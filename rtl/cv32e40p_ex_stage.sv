@@ -169,8 +169,16 @@ module cv32e40p_ex_stage
 );
 
   logic [                31:0] alu_result;
+  logic [                31:0] alu_result_1;
+  logic [                31:0] alu_result_2;
+  logic [                31:0] alu_result_3;
+
   logic [                31:0] mult_result;
+
   logic                        alu_cmp_result;
+  logic                        alu_cmp_result_1;
+  logic                        alu_cmp_result_2;
+  logic                        alu_cmp_result_3;	
 
   logic                        regfile_we_lsu;
   logic [                 5:0] regfile_waddr_lsu;
@@ -179,6 +187,10 @@ module cv32e40p_ex_stage
   logic                        wb_contention_lsu;
 
   logic                        alu_ready;
+  logic                        alu_ready_1;
+  logic                        alu_ready_2;
+  logic                        alu_ready_3;
+
   logic                        mulh_active;
   logic                        mult_ready;
 
@@ -264,7 +276,7 @@ module cv32e40p_ex_stage
   //                        //
   ////////////////////////////
 
-  cv32e40p_alu_tmr alu_i (
+  cv32e40p_alu alu_1 (
       .clk        (clk),
       .rst_n      (rst_n),
       .enable_i   (alu_en_i),
@@ -282,16 +294,84 @@ module cv32e40p_ex_stage
       .clpx_shift_i(alu_clpx_shift_i),
       .is_subrot_i (alu_is_subrot_i),
 
-      .result_o           (alu_result),
-      .comparison_result_o(alu_cmp_result),
+      .result_o           (alu_result_1),
+      .comparison_result_o(alu_cmp_result_1),
 
-      .ready_o   (alu_ready),
-      .ex_ready_i(ex_ready_o),
-		
-	  .faulty_o_1(ex_alu_faulty_1),
-	  .faulty_o_2(ex_alu_faulty_2),
-	  .faulty_o_3(ex_alu_faulty_3)
+      .ready_o   (alu_ready_1),
+      .ex_ready_i(ex_ready_o)
   );
+
+  cv32e40p_alu alu_2 (
+      .clk        (clk),
+      .rst_n      (rst_n),
+      .enable_i   (alu_en_i),
+      .operator_i (alu_operator_i),
+      .operand_a_i(alu_operand_a_i),
+      .operand_b_i(alu_operand_b_i),
+      .operand_c_i(alu_operand_c_i),
+
+      .vector_mode_i(alu_vec_mode_i),
+      .bmask_a_i    (bmask_a_i),
+      .bmask_b_i    (bmask_b_i),
+      .imm_vec_ext_i(imm_vec_ext_i),
+
+      .is_clpx_i   (alu_is_clpx_i),
+      .clpx_shift_i(alu_clpx_shift_i),
+      .is_subrot_i (alu_is_subrot_i),
+
+      .result_o           (alu_result_2),
+      .comparison_result_o(alu_cmp_result_2),
+
+      .ready_o   (alu_ready_2),
+      .ex_ready_i(ex_ready_o)
+  );
+
+  cv32e40p_alu alu_3 (
+      .clk        (clk),
+      .rst_n      (rst_n),
+      .enable_i   (alu_en_i),
+      .operator_i (alu_operator_i),
+      .operand_a_i(alu_operand_a_i),
+      .operand_b_i(alu_operand_b_i),
+      .operand_c_i(alu_operand_c_i),
+
+      .vector_mode_i(alu_vec_mode_i),
+      .bmask_a_i    (bmask_a_i),
+      .bmask_b_i    (bmask_b_i),
+      .imm_vec_ext_i(imm_vec_ext_i),
+
+      .is_clpx_i   (alu_is_clpx_i),
+      .clpx_shift_i(alu_clpx_shift_i),
+      .is_subrot_i (alu_is_subrot_i),
+
+      .result_o           (alu_result_3),
+      .comparison_result_o(alu_cmp_result_3),
+
+      .ready_o   (alu_ready_3),
+      .ex_ready_i(ex_ready_o)
+  );
+
+  cv32e40p_alu_voter alu_voter (
+	.result_1(alu_result_1),
+	.result_2(alu_result_2),
+	.result_3(alu_result_3),
+
+	.cmp_result_1(alu_cmp_result_1),
+	.cmp_result_2(alu_cmp_result_2),
+	.cmp_result_3(alu_cmp_result_3),
+
+	.ready_1(alu_ready_1),
+	.ready_2(alu_ready_2),
+	.ready_3(alu_ready_3),
+
+	.result(alu_result),
+	.cmp_result(alu_cmp_result),
+	.ready(alu_ready),
+
+	.faulty_o_1(ex_alu_faulty_1),
+	.faulty_o_2(ex_alu_faulty_2),
+	.faulty_o_3(ex_alu_faulty_3)
+);
 
 
   ////////////////////////////////////////////////////////////////

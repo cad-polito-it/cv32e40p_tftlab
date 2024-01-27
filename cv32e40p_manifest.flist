@@ -50,7 +50,7 @@ ${DESIGN_RTL_DIR}/cv32e40p_int_controller.sv
 ${DESIGN_RTL_DIR}/cv32e40p_ex_stage.sv
 ${DESIGN_RTL_DIR}/cv32e40p_alu_div.sv
 ${DESIGN_RTL_DIR}/cv32e40p_alu.sv
-${DESIGN_RTL_DIR}/cv32e40p_alu_tmr.sv
+${DESIGN_RTL_DIR}/cv32e40p_alu_voter.sv
 ${DESIGN_RTL_DIR}/cv32e40p_ff_one.sv
 ${DESIGN_RTL_DIR}/cv32e40p_popcnt.sv
 ${DESIGN_RTL_DIR}/cv32e40p_apu_disp.sv
