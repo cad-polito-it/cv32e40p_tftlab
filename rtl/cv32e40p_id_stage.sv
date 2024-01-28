@@ -251,7 +251,18 @@ module cv32e40p_id_stage
     output logic mhpmevent_pipe_stall_o,
 
     input logic        perf_imiss_i,
-    input logic [31:0] mcounteren_i
+    input logic [31:0] mcounteren_i,
+    //Error Detection Ports
+    output logic error_detected_id1,
+    output logic error_detected_id2,
+    output logic error_detected_id3,
+
+    output logic [5:0]			error_parity_regfile_o,
+	  //output logic [3:0]			error_decoder_o,
+	  output logic [2:0]			error_parity_id_ex_stage_o,
+    output logic error_detected_decod1,
+    output logic error_detected_decod2,
+    output logic error_detected_decod3
 );
 
   // Source/Destination register instruction index
@@ -267,9 +278,29 @@ module cv32e40p_id_stage
   localparam REG_D_MSB = 11;
   localparam REG_D_LSB = 7;
 
+  //////////////////////////////////////////////
+  //New Additions
+  localparam NUM_WORDS = 2 ** 5;
+
+  logic [    NUM_WORDS-1:0][1:0] 	parities;
+	logic						parity_a1;
+	logic						parity_a2;
+	logic 					parity_b1;
+	logic 					parity_b2;
+	logic						parity_c1;
+	logic						parity_c2;
+
+
+
+  // ID_EX_STAGE_REGISTERS	
+	logic [2:0] 		parity_id_ex_stage;
+	logic						parity_opa;
+	logic						parity_opb;
+	logic						parity_opc;
+
+  //////////////////////////////////////////////
+
   logic [31:0] instr;
-
-
   // Decoder/Controller ID stage internal signals
   logic        deassert_we;
 
@@ -438,7 +469,7 @@ module cv32e40p_id_stage
   logic [31:0] operand_b, operand_b_vec;
   logic [31:0] operand_c, operand_c_vec;
 
-  logic [31:0] alu_operand_a;
+  logic [31:0] alu_operand_a, alu_operand_a2;
   logic [31:0] alu_operand_b;
   logic [31:0] alu_operand_c;
 
@@ -606,6 +637,26 @@ module cv32e40p_id_stage
     ;  // case (alu_op_a_mux_sel)
   end
 
+  always_comb begin : alu_operand_a_mux2
+    case (alu_op_a_mux_sel)
+      OP_A_REGA_OR_FWD: alu_operand_a2 = operand_a_fw_id;
+      OP_A_REGB_OR_FWD: alu_operand_a2 = operand_b_fw_id;
+      OP_A_REGC_OR_FWD: alu_operand_a2 = operand_c_fw_id;
+      OP_A_CURRPC:      alu_operand_a2 = pc_id_i;
+      OP_A_IMM:         alu_operand_a2 = imm_a;
+      default:          alu_operand_a2 = operand_a_fw_id;
+    endcase
+    ;  // case (alu_op_a_mux_sel)
+  end
+
+  always_comb begin
+    if(alu_operand_a != alu_operand_a2) begin
+      error_detected_id1 = 1;
+    end else begin
+      error_detected_id1 = 0;
+    end
+  end
+
   always_comb begin : immediate_a_mux
     unique case (imm_a_mux_sel)
       IMMA_Z:    imm_a = imm_z_type;
@@ -663,6 +714,26 @@ module cv32e40p_id_stage
     endcase  // case (alu_op_b_mux_sel)
   end
 
+  logic [31:0] operand_b2;
+
+  always_comb begin : alu_operand_b_mux2
+    case (alu_op_b_mux_sel)
+      OP_B_REGA_OR_FWD: operand_b2 = operand_a_fw_id;
+      OP_B_REGB_OR_FWD: operand_b2 = operand_b_fw_id;
+      OP_B_REGC_OR_FWD: operand_b2 = operand_c_fw_id;
+      OP_B_IMM:         operand_b2 = imm_b;
+      OP_B_BMASK:       operand_b2 = $unsigned(operand_b_fw_id[4:0]);
+      default:          operand_b2 = operand_b_fw_id;
+    endcase  // case (alu_op_b_mux_sel)
+
+    if(operand_b != operand_b2) begin
+      error_detected_id2 = 1;
+    end else begin
+      error_detected_id2 = 0;
+    end
+
+  end
+
 
   // scalar replication for operand B and shuffle type
   always_comb begin
@@ -708,6 +779,24 @@ module cv32e40p_id_stage
       OP_C_JT:          operand_c = jump_target;
       default:          operand_c = operand_c_fw_id;
     endcase  // case (alu_op_c_mux_sel)
+  end
+
+  logic [31:0] operand_c2;
+
+  always_comb begin : alu_operand_c_mux2
+    case (alu_op_c_mux_sel)
+      OP_C_REGC_OR_FWD: operand_c2 = operand_c_fw_id;
+      OP_C_REGB_OR_FWD: operand_c2 = operand_b_fw_id;
+      OP_C_JT:          operand_c2 = jump_target;
+      default:          operand_c2 = operand_c_fw_id;
+    endcase  // case (alu_op_c_mux_sel)
+
+    if (operand_c2 != operand_c) begin
+      error_detected_id3 = 1;
+    end else begin
+      error_detected_id3 = 0;
+    end
+    
   end
 
 
@@ -928,6 +1017,8 @@ module cv32e40p_id_stage
   //                                                     //
   /////////////////////////////////////////////////////////
 
+  //logic [31:0] regfile_data_ra_id2, regfile_data_rb_id2, regfile_data_rc_id2;
+
   cv32e40p_register_file #(
       .ADDR_WIDTH(6),
       .DATA_WIDTH(32),
@@ -962,6 +1053,75 @@ module cv32e40p_id_stage
       .we_b_i   (regfile_alu_we_fw_power_i)
   );
 
+  // PARITY BIT
+
+	always_ff @(posedge clk, negedge rst_n) begin
+
+		if (rst_n == 1'b0) begin
+			parity_a1 = 0;
+			parity_a2 = 0;
+			parity_b1 = 0;
+			parity_b2 = 0;
+			parity_c1 = 0;
+			parity_c2 = 0;
+			parities = 64'b0;
+
+		end else begin
+
+			if(regfile_we_wb_power_i == 1) begin
+				parities[regfile_waddr_wb_i[4:0]][0] = ^regfile_wdata_wb_i[15:0];
+				parities[regfile_waddr_wb_i[4:0]][1] = ^regfile_wdata_wb_i[31:16];
+			end else if(regfile_alu_we_fw_power_i == 1) begin
+				parities[regfile_alu_waddr_fw_i[4:0]][0] = ^regfile_alu_wdata_fw_i[15:0];
+				parities[regfile_alu_waddr_fw_i[4:0]][1] = ^regfile_alu_wdata_fw_i[31:16];
+			end
+
+			parity_a1 = ^regfile_data_ra_id[15:0];
+			parity_a2 = ^regfile_data_ra_id[31:16];
+			parity_b1 = ^regfile_data_rb_id[15:0];
+			parity_b2 = ^regfile_data_rb_id[31:16];
+			parity_c1 = ^regfile_data_rc_id[15:0];
+			parity_c2 = ^regfile_data_rc_id[31:16];
+
+			if(parity_a1 != parities[regfile_addr_ra_id[4:0]][0]) begin 
+				error_parity_regfile_o[0] = 1;
+			end else begin
+				error_parity_regfile_o[0] = 0;
+			end
+
+			if(parity_a2 != parities[regfile_addr_ra_id[4:0]][1]) begin 
+				error_parity_regfile_o[1] = 1;
+			end else begin
+				error_parity_regfile_o[1] = 0;
+			end
+
+			if(parity_b1 != parities[regfile_addr_rb_id[4:0]][0]) begin 
+				error_parity_regfile_o[2] = 1;
+			end else begin
+				error_parity_regfile_o[2] = 0;
+			end
+
+			if(parity_b2 != parities[regfile_addr_rb_id[4:0]][1]) begin 
+				error_parity_regfile_o[3] = 1;
+			end else begin
+				error_parity_regfile_o[3] = 0;
+			end
+
+			if(parity_c1 != parities[regfile_addr_rc_id[4:0]][0]) begin 
+				error_parity_regfile_o[4] = 1;
+			end else begin
+				error_parity_regfile_o[4] = 0;
+			end
+
+			if(parity_c2 != parities[regfile_addr_rc_id[4:0]][1]) begin 
+				error_parity_regfile_o[5] = 1;
+			end else begin
+				error_parity_regfile_o[5] = 0;
+			end
+		
+		end
+
+	end
 
   ///////////////////////////////////////////////
   //  ____  _____ ____ ___  ____  _____ ____   //
@@ -1098,9 +1258,13 @@ module cv32e40p_id_stage
       .ctrl_transfer_target_mux_sel_o(ctrl_transfer_target_mux_sel),
 
       // HPM related control signals
-      .mcounteren_i(mcounteren_i)
+      .mcounteren_i(mcounteren_i),
+      .error_detected_decod1(error_detected_decod1),
+      .error_detected_decod2(error_detected_decod2),
+      .error_detected_decod3(error_detected_decod3)
 
   );
+
 
   ////////////////////////////////////////////////////////////////////
   //    ____ ___  _   _ _____ ____   ___  _     _     _____ ____    //
@@ -1422,6 +1586,53 @@ module cv32e40p_id_stage
   //  |___|____/      |_____/_/\_\ |_|  |___|_|   |_____|_____|___|_| \_|_____|  //
   //                                                                             //
   /////////////////////////////////////////////////////////////////////////////////
+
+  always_ff @(posedge clk, negedge rst_n) begin
+		if (rst_n == 1'b0) begin
+			parity_id_ex_stage = 3'b0;
+			parity_opa = 0;
+			parity_opb = 0;
+			parity_opc = 0;
+		end else begin
+
+			parity_id_ex_stage[0] = ^alu_operand_a;
+			parity_id_ex_stage[1] = ^alu_operand_b;
+			parity_id_ex_stage[2] = ^alu_operand_c;
+
+			if (alu_en) begin
+				parity_opa = ^alu_operand_a_ex_o;
+				parity_opb = ^alu_operand_b_ex_o;
+				parity_opc = ^alu_operand_c_ex_o;
+			end else if (mult_int_en) begin
+				parity_opa = ^mult_operand_a_ex_o;
+				parity_opb = ^mult_operand_b_ex_o;
+				parity_opc = ^mult_operand_c_ex_o;
+			end else if (mult_dot_en) begin
+				parity_opa = ^mult_dot_op_a_ex_o;
+				parity_opb = ^mult_dot_op_b_ex_o;
+				parity_opc = ^mult_dot_op_c_ex_o;
+			end
+
+			if(parity_opa != parity_id_ex_stage[0]) begin
+				error_parity_id_ex_stage_o[0] = 1;
+			end else begin
+				error_parity_id_ex_stage_o[0] = 0;
+			end
+
+			if(parity_opb != parity_id_ex_stage[1]) begin
+				error_parity_id_ex_stage_o[1] = 1;
+			end else begin
+				error_parity_id_ex_stage_o[1] = 0;
+			end
+
+			if(parity_opc != parity_id_ex_stage[2]) begin
+				error_parity_id_ex_stage_o[2] = 1;
+			end else begin
+				error_parity_id_ex_stage_o[2] = 0;
+			end
+		end
+
+	end
 
   always_ff @(posedge clk, negedge rst_n) begin : ID_EX_PIPE_REGISTERS
     if (rst_n == 1'b0) begin

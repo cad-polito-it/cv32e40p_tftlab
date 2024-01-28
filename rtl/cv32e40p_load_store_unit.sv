@@ -70,6 +70,9 @@ module cv32e40p_load_store_unit #(
     output logic lsu_ready_wb_o,  // LSU ready for new data in WB stage
 
     output logic busy_o
+    //output logic error_detected_ls1,
+    //output logic error_detected_ls2,
+    //output logic error_detected_ls3
 );
 
   localparam DEPTH = 2;  // Maximum number of outstanding transactions
@@ -226,6 +229,17 @@ module cv32e40p_load_store_unit #(
       2'b10: rdata_w_ext = {resp_rdata[15:0], rdata_q[31:16]};
       2'b11: rdata_w_ext = {resp_rdata[23:0], rdata_q[31:24]};
     endcase
+    /*case (rdata_offset_q)
+      2'b00: rdata_w_ext2 = resp_rdata[31:0];
+      2'b01: rdata_w_ext2 = {resp_rdata[7:0], rdata_q[31:8]};
+      2'b10: rdata_w_ext2 = {resp_rdata[15:0], rdata_q[31:16]};
+      2'b11: rdata_w_ext2 = {resp_rdata[23:0], rdata_q[31:24]};
+    endcase
+    if(rdata_w_ext != rdata_w_ext2) begin
+      error_detected_ls1 = 1;
+    end else begin
+      error_detected_ls1 = 0;
+    end*/
   end
 
   // sign extension for half words
@@ -256,6 +270,37 @@ module cv32e40p_load_store_unit #(
         else rdata_h_ext = {{16{resp_rdata[7]}}, resp_rdata[7:0], rdata_q[31:24]};
       end
     endcase  // case (rdata_offset_q)
+    /*case (rdata_offset_q)
+      2'b00: begin
+        if (data_sign_ext_q == 2'b00) rdata_h_ext2 = {16'h0000, resp_rdata[15:0]};
+        else if (data_sign_ext_q == 2'b10) rdata_h_ext2 = {16'hffff, resp_rdata[15:0]};
+        else rdata_h_ext2 = {{16{resp_rdata[15]}}, resp_rdata[15:0]};
+      end
+
+      2'b01: begin
+        if (data_sign_ext_q == 2'b00) rdata_h_ext2 = {16'h0000, resp_rdata[23:8]};
+        else if (data_sign_ext_q == 2'b10) rdata_h_ext2 = {16'hffff, resp_rdata[23:8]};
+        else rdata_h_ext2 = {{16{resp_rdata[23]}}, resp_rdata[23:8]};
+      end
+
+      2'b10: begin
+        if (data_sign_ext_q == 2'b00) rdata_h_ext2 = {16'h0000, resp_rdata[31:16]};
+        else if (data_sign_ext_q == 2'b10) rdata_h_ext2 = {16'hffff, resp_rdata[31:16]};
+        else rdata_h_ext2 = {{16{resp_rdata[31]}}, resp_rdata[31:16]};
+      end
+
+      2'b11: begin
+        if (data_sign_ext_q == 2'b00) rdata_h_ext2 = {16'h0000, resp_rdata[7:0], rdata_q[31:24]};
+        else if (data_sign_ext_q == 2'b10)
+          rdata_h_ext2 = {16'hffff, resp_rdata[7:0], rdata_q[31:24]};
+        else rdata_h_ext2 = {{16{resp_rdata[7]}}, resp_rdata[7:0], rdata_q[31:24]};
+      end
+    endcase
+    if (rdata_h_ext != rdata_h_ext2) begin
+      error_detected_ls2 = 1;
+    end else begin
+      error_detected_ls2 = 0;
+    end*/
   end
 
   // sign extension for bytes
@@ -285,6 +330,36 @@ module cv32e40p_load_store_unit #(
         else rdata_b_ext = {{24{resp_rdata[31]}}, resp_rdata[31:24]};
       end
     endcase  // case (rdata_offset_q)
+    /*case (rdata_offset_q)
+      2'b00: begin
+        if (data_sign_ext_q == 2'b00) rdata_b_ext2 = {24'h00_0000, resp_rdata[7:0]};
+        else if (data_sign_ext_q == 2'b10) rdata_b_ext2 = {24'hff_ffff, resp_rdata[7:0]};
+        else rdata_b_ext2 = {{24{resp_rdata[7]}}, resp_rdata[7:0]};
+      end
+
+      2'b01: begin
+        if (data_sign_ext_q == 2'b00) rdata_b_ext2 = {24'h00_0000, resp_rdata[15:8]};
+        else if (data_sign_ext_q == 2'b10) rdata_b_ext2 = {24'hff_ffff, resp_rdata[15:8]};
+        else rdata_b_ext2 = {{24{resp_rdata[15]}}, resp_rdata[15:8]};
+      end
+
+      2'b10: begin
+        if (data_sign_ext_q == 2'b00) rdata_b_ext2 = {24'h00_0000, resp_rdata[23:16]};
+        else if (data_sign_ext_q == 2'b10) rdata_b_ext2 = {24'hff_ffff, resp_rdata[23:16]};
+        else rdata_b_ext2 = {{24{resp_rdata[23]}}, resp_rdata[23:16]};
+      end
+
+      2'b11: begin
+        if (data_sign_ext_q == 2'b00) rdata_b_ext2 = {24'h00_0000, resp_rdata[31:24]};
+        else if (data_sign_ext_q == 2'b10) rdata_b_ext2 = {24'hff_ffff, resp_rdata[31:24]};
+        else rdata_b_ext2 = {{24{resp_rdata[31]}}, resp_rdata[31:24]};
+      end
+    endcase
+    if(rdata_b_ext != rdata_b_ext2) begin
+      error_detected_ls3 = 1;
+    end else begin
+      error_detected_ls3 = 0;
+    end*/
   end
 
   // select word, half word or byte sign extended version

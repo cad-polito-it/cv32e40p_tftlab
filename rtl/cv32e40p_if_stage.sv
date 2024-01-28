@@ -96,7 +96,20 @@ module cv32e40p_if_stage #(
 
     // misc signals
     output logic if_busy_o,  // is the IF stage busy fetching instructions?
-    output logic perf_imiss_o  // Instruction Fetch Miss
+    output logic perf_imiss_o,  // Instruction Fetch Miss
+    //Error Detection Ports
+    output logic error_detected_if1,
+    output logic error_detected_if2,
+    output logic error_detected_dec,
+    output logic error_detected_dec2,
+    output logic error_detected_dec3,
+    output logic error_detected_dec4,
+    output logic error_detected_dec5,
+    output logic error_detected_dec6,
+    output logic error_detected_dec7,
+    output logic error_detected_dec8,
+    
+    output logic error_prefech_buffer_parity_o
 );
 
   import cv32e40p_pkg::*;
@@ -107,12 +120,14 @@ module cv32e40p_if_stage #(
   logic        prefetch_busy;
   logic        branch_req;
   logic [31:0] branch_addr_n;
+  logic [31:0] branch_addr_n2;
 
   logic        fetch_valid;
   logic        fetch_ready;
   logic [31:0] fetch_rdata;
 
   logic [31:0] exc_pc;
+  logic [31:0] exc_pc2;
 
   logic [23:0] trap_base_addr;
   logic [ 4:0] exc_vec_pc_mux;
@@ -149,12 +164,27 @@ module cv32e40p_if_stage #(
       EXC_PC_DBE: exc_pc = {dm_exception_addr_i[31:2], 2'b0};
       default: exc_pc = {trap_base_addr, 8'h0};
     endcase
+    unique case (exc_pc_mux_i)
+      EXC_PC_EXCEPTION:
+      exc_pc2 = {trap_base_addr, 8'h0};  //1.10 all the exceptions go to base address
+      EXC_PC_IRQ: exc_pc2 = {trap_base_addr, 1'b0, exc_vec_pc_mux, 2'b0};  // interrupts are vectored
+      EXC_PC_DBD: exc_pc2 = {dm_halt_addr_i[31:2], 2'b0};
+      EXC_PC_DBE: exc_pc2 = {dm_exception_addr_i[31:2], 2'b0};
+      default: exc_pc2 = {trap_base_addr, 8'h0};
+    endcase
+
+    if (exc_pc != exc_pc2) begin
+      error_detected_if1 = 1;
+    end else begin
+      error_detected_if1 = 0;
+    end
   end
 
   // fetch address selection
   always_comb begin
     // Default assign PC_BOOT (should be overwritten in below case)
     branch_addr_n = {boot_addr_i[31:2], 2'b0};
+    branch_addr_n2 = {boot_addr_i[31:2], 2'b0};
 
     unique case (pc_mux_i)
       PC_BOOT: branch_addr_n = {boot_addr_i[31:2], 2'b0};
@@ -168,6 +198,24 @@ module cv32e40p_if_stage #(
       PC_HWLOOP: branch_addr_n = hwlp_target_i;
       default: ;
     endcase
+    unique case (pc_mux_i)
+      PC_BOOT: branch_addr_n2 = {boot_addr_i[31:2], 2'b0};
+      PC_JUMP: branch_addr_n2 = jump_target_id_i;
+      PC_BRANCH: branch_addr_n2 = jump_target_ex_i;
+      PC_EXCEPTION: branch_addr_n2 = exc_pc;  // set PC to exception handler
+      PC_MRET: branch_addr_n2 = mepc_i;  // PC is restored when returning from IRQ/exception
+      PC_URET: branch_addr_n2 = uepc_i;  // PC is restored when returning from IRQ/exception
+      PC_DRET: branch_addr_n2 = depc_i;  //
+      PC_FENCEI: branch_addr_n2 = pc_id_o + 4;  // jump to next instr forces prefetch buffer reload
+      PC_HWLOOP: branch_addr_n2 = hwlp_target_i;
+      default: ;
+    endcase
+
+    if(branch_addr_n != branch_addr_n2) begin
+      error_detected_if2 = 1;
+    end else begin
+      error_detected_if2 = 0;
+    end
   end
 
   // tell CS register file to initialize mtvec on boot
@@ -205,7 +253,9 @@ module cv32e40p_if_stage #(
       .instr_rdata_i  (instr_rdata_i),
 
       // Prefetch Buffer Status
-      .busy_o(prefetch_busy)
+      .busy_o(prefetch_busy),
+
+      .error_prefech_buffer_parity_o(error_prefech_buffer_parity_o)
   );
 
   // offset FSM state transition logic
@@ -270,16 +320,202 @@ module cv32e40p_if_stage #(
       .pc_o            (pc_if_o)
   );
 
+
+  logic [31:0] instr_decompressed1;
+  logic [31:0] instr_decompressed_mux1, instr_decompressed_mux2;
+
   cv32e40p_compressed_decoder #(
       .FPU  (FPU),
       .ZFINX(ZFINX)
   ) compressed_decoder_i (
       .instr_i        (instr_aligned),
-      .instr_o        (instr_decompressed),
+      .instr_o        (instr_decompressed1),
       .is_compressed_o(instr_compressed_int),
       .illegal_instr_o(illegal_c_insn)
   );
 
+  logic [31:0] instr_decompressed2;
+
+  cv32e40p_compressed_decoder #(
+      .FPU  (FPU),
+      .ZFINX(ZFINX)
+  ) compressed_decoder_i2 (
+      .instr_i        (instr_aligned),
+      .instr_o        (instr_decompressed2),
+      .is_compressed_o(instr_compressed_int2),
+      .illegal_instr_o(illegal_c_insn2)
+  );
+
+
+  logic [31:0] instr_decompressed3;
+
+  cv32e40p_compressed_decoder #(
+      .FPU  (FPU),
+      .ZFINX(ZFINX)
+  ) compressed_decoder_i3 (
+      .instr_i        (instr_aligned),
+      .instr_o        (instr_decompressed3),
+      .is_compressed_o(instr_compressed_int3),
+      .illegal_instr_o(illegal_c_insn3)
+  );
+
+  logic [31:0] instr_decompressed4;
+
+  cv32e40p_compressed_decoder #(
+      .FPU  (FPU),
+      .ZFINX(ZFINX)
+  ) compressed_decoder_i4 (
+      .instr_i        (instr_aligned),
+      .instr_o        (instr_decompressed4),
+      .is_compressed_o(instr_compressed_int4),
+      .illegal_instr_o(illegal_c_insn4)
+  );
+
+  logic [31:0] instr_decompressed5;
+
+  cv32e40p_compressed_decoder #(
+      .FPU  (FPU),
+      .ZFINX(ZFINX)
+  ) compressed_decoder_i5 (
+      .instr_i        (instr_aligned),
+      .instr_o        (instr_decompressed5),
+      .is_compressed_o(instr_compressed_int5),
+      .illegal_instr_o(illegal_c_insn5)
+  );
+
+  logic [31:0] instr_decompressed6;
+
+  cv32e40p_compressed_decoder #(
+      .FPU  (FPU),
+      .ZFINX(ZFINX)
+  ) compressed_decoder_i6 (
+      .instr_i        (instr_aligned),
+      .instr_o        (instr_decompressed6),
+      .is_compressed_o(instr_compressed_int),
+      .illegal_instr_o(illegal_c_insn)
+  );
+
+  logic [31:0] instr_decompressed7;
+
+  cv32e40p_compressed_decoder #(
+      .FPU  (FPU),
+      .ZFINX(ZFINX)
+  ) compressed_decoder_i7 (
+      .instr_i        (instr_aligned),
+      .instr_o        (instr_decompressed7),
+      .is_compressed_o(instr_compressed_int),
+      .illegal_instr_o(illegal_c_insn)
+  );
+
+  logic [31:0] instr_decompressed8;
+
+  cv32e40p_compressed_decoder #(
+      .FPU  (FPU),
+      .ZFINX(ZFINX)
+  ) compressed_decoder_i8 (
+      .instr_i        (instr_aligned),
+      .instr_o        (instr_decompressed8),
+      .is_compressed_o(instr_compressed_int),
+      .illegal_instr_o(illegal_c_insn)
+  );
+
+  logic [31:0] instr_decompressed9;
+
+  cv32e40p_compressed_decoder #(
+      .FPU  (FPU),
+      .ZFINX(ZFINX)
+  ) compressed_decoder_i9 (
+      .instr_i        (instr_aligned),
+      .instr_o        (instr_decompressed9),
+      .is_compressed_o(instr_compressed_int),
+      .illegal_instr_o(illegal_c_insn)
+  );
+
+  logic [1:0] selMUX;
+  logic selMUX_o;
+
+  always_comb begin
+    
+    if (instr_decompressed1 != instr_decompressed2) begin
+      error_detected_dec = 1;
+    end else begin
+      error_detected_dec = 0;
+    end
+    if (instr_decompressed1 != instr_decompressed3) begin
+        error_detected_dec2 = 1;
+    end else begin
+      error_detected_dec2 = 0;
+    end
+  
+    if (instr_decompressed1 != instr_decompressed4) begin
+        error_detected_dec3 = 1;
+    end else begin
+      error_detected_dec3 = 0;
+    end
+
+    if (instr_decompressed1 != instr_decompressed5) begin
+        error_detected_dec4 = 1;
+    end else begin
+      error_detected_dec4 = 0;
+    end
+
+    if (instr_decompressed1 != instr_decompressed6) begin
+      error_detected_dec5 = 1;
+    end else begin
+      error_detected_dec5 = 0;
+    end
+    if (instr_decompressed1 != instr_decompressed7) begin
+        error_detected_dec6 = 1;
+    end else begin
+      error_detected_dec6 = 0;
+    end
+  
+    if (instr_decompressed1 != instr_decompressed8) begin
+        error_detected_dec7 = 1;
+    end else begin
+      error_detected_dec7 = 0;
+    end
+
+    if (instr_decompressed9 != instr_decompressed9) begin
+        error_detected_dec8 = 1;
+    end else begin
+      error_detected_dec8 = 0;
+    end
+
+
+    selMUX[1] = error_detected_dec & error_detected_dec2;
+    selMUX[0] = (error_detected_dec & ~error_detected_dec2) | (error_detected_dec & error_detected_dec2 & error_detected_dec3);
+    selMUX_o = error_detected_dec & error_detected_dec2 & error_detected_dec3 & error_detected_dec4 ;
+    //selMUX_mult = error_detected_mult & ~error_detected_mult2;
+
+    //the MUX implementation
+    
+    case(selMUX)
+
+	      2'b00: begin instr_decompressed_mux1 = instr_decompressed1; end
+        2'b01: begin instr_decompressed_mux1 = instr_decompressed2; end
+        2'b10: begin instr_decompressed_mux1 = instr_decompressed3; end
+        default: begin instr_decompressed_mux1 = instr_decompressed4; end
+
+    endcase
+
+    case(selMUX)
+
+	      2'b00: begin instr_decompressed_mux2 = instr_decompressed5; end
+        2'b01: begin instr_decompressed_mux2 = instr_decompressed6; end
+        2'b10: begin instr_decompressed_mux2 = instr_decompressed7; end
+        default: begin instr_decompressed_mux2 = instr_decompressed8; end
+
+    endcase
+
+    case(selMUX_o)
+
+        1'b0: begin instr_decompressed = instr_decompressed_mux1; end
+        default: begin instr_decompressed = instr_decompressed_mux2; end
+
+    endcase
+
+  end
   //----------------------------------------------------------------------------
   // Assertions
   //----------------------------------------------------------------------------

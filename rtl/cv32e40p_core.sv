@@ -96,8 +96,65 @@ module cv32e40p_core
 
     // CPU Control Signals
     input  logic fetch_enable_i,
-    output logic core_sleep_o
+    output logic core_sleep_o,
+
+    //New Strobe Points
+    output logic error_detected_ex1,
+    output logic error_detected_alu,
+    output logic error_detected_alu2,
+    output logic error_detected_alu3,
+    output logic error_detected_alu4,
+    output logic error_detected_alu5,
+    output logic error_detected_alu6,
+    output logic error_detected_alu7,
+    output logic error_detected_alu8,
+    output logic error_detected_mult,
+    output logic error_detected_mult2,
+    output logic error_detected_mult3,
+    output logic error_detected_mult4,
+    output logic error_detected_mult5,
+    output logic error_detected_mult6,
+    output logic error_detected_mult7,
+    output logic error_detected_mult8,
+    output logic error_detected_if1,
+    output logic error_detected_if2,
+    output logic error_detected_dec,
+    output logic error_detected_dec2,
+    output logic error_detected_dec3,
+    output logic error_detected_dec4,
+    output logic error_detected_dec5,
+    output logic error_detected_dec6,
+    output logic error_detected_dec7,
+    output logic error_detected_dec8,
+    output logic error_detected_id1,
+    output logic error_detected_id2,
+    output logic error_detected_id3,
+
+    output logic [5:0]			error_parity_regfile_o,
+	  //output logic [3:0]			error_decoder_o,
+	  output logic [2:0]			error_parity_id_ex_stage_o,
+	  output logic [3:0]			error_load_store_o,
+	  output logic 				error_prefech_buffer_parity_o,
+
+    output logic error_detected_decod1,
+    output logic error_detected_decod2,
+    output logic error_detected_decod3
 );
+
+  // Added Signals for the LS Error Detection
+	logic 			data_req_pmp_2;
+	logic [31:0] 	data_addr_pmp_2, data_addr_pmp_3, data_addr_pmp_4, data_addr_pmp_5;
+	logic 			data_we_o_2;
+	logic [5:0] 	data_atop_o_2;
+	logic [3:0] 	data_be_o_2;
+	logic [31:0] 	data_wdata_o_2, data_wdata_o_3, data_wdata_o_4, data_wdata_o_5;
+	logic [31: 0] 	lsu_rdata_2, lsu_rdata_3, lsu_rdata_4, lsu_rdata_5;
+	logic 			data_misaligned_2;
+	logic 			p_elw_start_2;
+	logic 			p_elw_finish_2;
+	logic 			lsu_ready_ex_2;
+	logic 			lsu_ready_wb_2;
+	logic 			lsu_busy_2;
 
   import cv32e40p_pkg::*;
 
@@ -497,7 +554,18 @@ module cv32e40p_core
       .id_ready_i(id_ready),
 
       .if_busy_o   (if_busy),
-      .perf_imiss_o(perf_imiss)
+      .perf_imiss_o(perf_imiss),
+      .error_detected_if1(error_detected_if1),
+      .error_detected_if2(error_detected_if2),
+      .error_detected_dec(error_detected_dec),
+      .error_detected_dec2(error_detected_dec2),
+      .error_detected_dec3(error_detected_dec3),
+      .error_detected_dec4(error_detected_dec4),
+      .error_detected_dec5(error_detected_dec5),
+      .error_detected_dec6(error_detected_dec6),
+      .error_detected_dec7(error_detected_dec7),
+      .error_detected_dec8(error_detected_dec8),
+	    .error_prefech_buffer_parity_o(error_prefech_buffer_parity_o)
   );
 
 
@@ -509,6 +577,8 @@ module cv32e40p_core
   //  |___|____/  |____/ |_/_/   \_\____|_____|  //
   //                                             //
   /////////////////////////////////////////////////
+  logic error_detected_o1, error_detected_o2;
+
   cv32e40p_id_stage #(
       .COREV_PULP      (COREV_PULP),
       .COREV_CLUSTER   (COREV_CLUSTER),
@@ -731,7 +801,19 @@ module cv32e40p_core
       .mhpmevent_pipe_stall_o  (mhpmevent_pipe_stall),
 
       .perf_imiss_i(perf_imiss),
-      .mcounteren_i(mcounteren)
+      .mcounteren_i(mcounteren),
+
+      .error_detected_id1(error_detected_id1),
+      .error_detected_id2(error_detected_id2),
+      .error_detected_id3(error_detected_id3),
+
+      .error_parity_regfile_o(error_parity_regfile_o),
+	    //.error_decoder_o(error_decoder_o),
+	    .error_parity_id_ex_stage_o(error_parity_id_ex_stage_o),
+      
+      .error_detected_decod1(error_detected_decod1),
+      .error_detected_decod2(error_detected_decod2),
+      .error_detected_decod3(error_detected_decod3)
   );
 
 
@@ -870,8 +952,26 @@ module cv32e40p_core
 
       .ex_ready_o(ex_ready),
       .ex_valid_o(ex_valid),
-      .wb_ready_i(lsu_ready_wb)
+      .wb_ready_i(lsu_ready_wb),
+      .error_detected_ex1(error_detected_ex1),
+      .error_detected_alu(error_detected_alu),
+      .error_detected_alu2(error_detected_alu2),
+      .error_detected_alu3(error_detected_alu3),
+      .error_detected_alu4(error_detected_alu4),
+      .error_detected_alu5(error_detected_alu5),
+      .error_detected_alu6(error_detected_alu6),
+      .error_detected_alu7(error_detected_alu7),
+      .error_detected_alu8(error_detected_alu8),
+      .error_detected_mult(error_detected_mult),
+      .error_detected_mult2(error_detected_mult2),
+      .error_detected_mult3(error_detected_mult3),
+      .error_detected_mult4(error_detected_mult4),
+      .error_detected_mult5(error_detected_mult5),
+      .error_detected_mult6(error_detected_mult6),
+      .error_detected_mult7(error_detected_mult7),
+      .error_detected_mult8(error_detected_mult8)
   );
+
 
 
   ////////////////////////////////////////////////////////////////////////////////////////
@@ -882,6 +982,8 @@ module cv32e40p_core
   //   |_____\___/_/   \_\____/  |____/ |_| \___/|_| \_\_____|  \___/|_| \_|___| |_|    //
   //                                                                                    //
   ////////////////////////////////////////////////////////////////////////////////////////
+
+  logic [31:0] data_addr_pmp1, data_wdata_o1, lsu_rdata1;
 
   cv32e40p_load_store_unit #(
       .PULP_OBI(PULP_OBI)
@@ -896,11 +998,11 @@ module cv32e40p_core
       .data_err_i    (1'b0),  // Bus error (not used yet)
       .data_err_pmp_i(data_err_pmp),  // PMP error
 
-      .data_addr_o (data_addr_pmp),
+      .data_addr_o (data_addr_pmp1),
       .data_we_o   (data_we_o),
       .data_atop_o (data_atop_o),
       .data_be_o   (data_be_o),
-      .data_wdata_o(data_wdata_o),
+      .data_wdata_o(data_wdata_o1),
       .data_rdata_i(data_rdata_i),
 
       // signal from ex stage
@@ -912,7 +1014,7 @@ module cv32e40p_core
       .data_load_event_ex_i(data_load_event_ex),
       .data_sign_ext_ex_i  (data_sign_ext_ex),  // sign extension
 
-      .data_rdata_ex_o  (lsu_rdata),
+      .data_rdata_ex_o  (lsu_rdata1),
       .data_req_ex_i    (data_req_ex),
       .operand_a_ex_i   (alu_operand_a_ex),
       .operand_b_ex_i   (alu_operand_b_ex),
@@ -933,6 +1035,84 @@ module cv32e40p_core
 
   // Tracer signal
   assign wb_valid = lsu_ready_wb;
+
+  
+cv32e40p_load_store_unit #(
+      .PULP_OBI(PULP_OBI)
+  ) load_store_unit_i_2 (
+      .clk  (clk),
+      .rst_n(rst_ni),
+
+      //output to data memory
+      .data_req_o    (data_req_pmp_2),
+      .data_gnt_i    (data_gnt_pmp),
+      .data_rvalid_i (data_rvalid_i),
+      .data_err_i    (1'b0),  // Bus error (not used yet)
+      .data_err_pmp_i(data_err_pmp),  // PMP error
+
+      .data_addr_o (data_addr_pmp_2),
+      .data_we_o   (data_we_o_2),
+      .data_atop_o (data_atop_o_2),
+      .data_be_o   (data_be_o_2),
+      .data_wdata_o(data_wdata_o_2),
+      .data_rdata_i(data_rdata_i),
+
+      // signal from ex stage
+      .data_we_ex_i        (data_we_ex),
+      .data_atop_ex_i      (data_atop_ex),
+      .data_type_ex_i      (data_type_ex),
+      .data_wdata_ex_i     (alu_operand_c_ex),
+      .data_reg_offset_ex_i(data_reg_offset_ex),
+      .data_load_event_ex_i(data_load_event_ex),
+      .data_sign_ext_ex_i  (data_sign_ext_ex),  // sign extension
+
+      .data_rdata_ex_o  (lsu_rdata_2),
+      .data_req_ex_i    (data_req_ex),
+      .operand_a_ex_i   (alu_operand_a_ex),
+      .operand_b_ex_i   (alu_operand_b_ex),
+      .addr_useincr_ex_i(useincr_addr_ex),
+
+      .data_misaligned_ex_i(data_misaligned_ex),  // from ID/EX pipeline
+      .data_misaligned_o   (data_misaligned_2),
+
+      .p_elw_start_o (p_elw_start_2),
+      .p_elw_finish_o(p_elw_finish_2),
+
+      // control signals
+      .lsu_ready_ex_o(lsu_ready_ex_2),
+      .lsu_ready_wb_o(lsu_ready_wb_2),
+
+      .busy_o(lsu_busy_2)
+  );
+
+	always_comb begin
+
+		if(data_req_pmp_2 != data_req_pmp || data_addr_pmp_2 != data_addr_pmp || data_we_o_2 != data_we_o) begin
+			error_load_store_o[0] = 1;
+		end else begin
+			error_load_store_o[0] = 0;
+		end
+
+		if(data_atop_o_2 != data_atop_o || data_be_o_2 != data_be_o || data_wdata_o_2 != data_wdata_o) begin
+			error_load_store_o[1] = 1;
+		end else begin
+			error_load_store_o[1] = 0;
+		end
+
+		if(lsu_rdata_2 != lsu_rdata || data_misaligned_2 != data_misaligned || p_elw_start_2 != p_elw_start) begin
+			error_load_store_o[2] = 1;
+		end else begin
+			error_load_store_o[2] = 0;
+		end
+
+		if(p_elw_finish_2 != p_elw_finish || lsu_ready_ex_2 != lsu_ready_ex || lsu_ready_wb_2 != lsu_ready_wb || lsu_busy_2 != lsu_busy) begin
+			error_load_store_o[3] = 1;
+		end else begin
+			error_load_store_o[3] = 0;
+		end
+
+	end
+
 
 
   //////////////////////////////////////

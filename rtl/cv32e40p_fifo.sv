@@ -33,7 +33,9 @@ module cv32e40p_fifo #(
     input logic push_i,  // data is valid and can be pushed to the queue
     // as long as the queue is not empty we can pop new elements
     output logic [DATA_WIDTH-1:0] data_o,  // output data
-    input logic pop_i  // pop head from queue
+    input logic pop_i,  // pop head from queue
+
+    output logic 		error_prefech_buffer_parity_o
 );
   // local parameter
   // FIFO depth - handle the case of pass-through, synthesizer will do constant propagation
@@ -47,6 +49,10 @@ module cv32e40p_fifo #(
       status_cnt_n, status_cnt_q;  // this integer will be truncated by the synthesis tool
   // actual memory
   logic [FIFO_DEPTH - 1:0][DATA_WIDTH-1:0] mem_n, mem_q;
+
+  //Error Detection-related signals
+  logic [FIFO_DEPTH - 1:0] parities;
+	logic 					 parity;
 
   assign cnt_o = status_cnt_q;
 
@@ -68,6 +74,15 @@ module cv32e40p_fifo #(
     write_pointer_n = write_pointer_q;
     status_cnt_n    = status_cnt_q;
     data_o          = (DEPTH == 0) ? data_i : mem_q[read_pointer_q];
+
+    parity = ^mem_q[read_pointer_q];
+
+	  if(parity != parities[read_pointer_q]) begin
+		  error_prefech_buffer_parity_o = 1;
+	  end else begin 
+		  error_prefech_buffer_parity_o = 0;
+	  end
+
     mem_n           = mem_q;
     gate_clock      = 1'b1;
 

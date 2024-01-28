@@ -158,8 +158,16 @@ module cv32e40p_decoder
   output logic [1:0]  ctrl_transfer_target_mux_sel_o,        // jump target selection
 
   // HPM related control signals
-  input  logic [31:0] mcounteren_i
+  input  logic [31:0] mcounteren_i,
+
+  output logic error_detected_decod1,
+  output logic error_detected_decod2,
+  output logic error_detected_decod3
 );
+
+  //New Additions
+  logic [2:0] alu_op_a_mux_sel_o2, alu_op_b_mux_sel_o2;
+  logic [3:0] imm_b_mux_sel_o2;
 
   // write enable/request control
   logic       regfile_mem_we;
@@ -203,7 +211,11 @@ module cv32e40p_decoder
     alu_en                         = 1'b1;
     alu_operator_o                 = ALU_SLTU;
     alu_op_a_mux_sel_o             = OP_A_REGA_OR_FWD;
+    alu_op_a_mux_sel_o2            = OP_A_REGA_OR_FWD;
+
     alu_op_b_mux_sel_o             = OP_B_REGB_OR_FWD;
+    alu_op_b_mux_sel_o2             = OP_B_REGB_OR_FWD;
+
     alu_op_c_mux_sel_o             = OP_C_REGC_OR_FWD;
     alu_vec_o                      = 1'b0;
     alu_vec_mode_o                 = VEC_MODE32;
@@ -212,6 +224,7 @@ module cv32e40p_decoder
     regc_mux_o                     = REGC_ZERO;
     imm_a_mux_sel_o                = IMMA_ZERO;
     imm_b_mux_sel_o                = IMMB_I;
+    imm_b_mux_sel_o2                = IMMB_I;
 
     mult_int_en                    = 1'b0;
     mult_dot_en                    = 1'b0;
@@ -307,7 +320,10 @@ module cv32e40p_decoder
         // Calculate and store PC+4
         alu_op_a_mux_sel_o  = OP_A_CURRPC;
         alu_op_b_mux_sel_o  = OP_B_IMM;
+        alu_op_a_mux_sel_o2  = OP_A_CURRPC;
+        alu_op_b_mux_sel_o2  = OP_B_IMM;
         imm_b_mux_sel_o     = IMMB_PCINCR;
+        imm_b_mux_sel_o2     = IMMB_PCINCR;
         alu_operator_o      = ALU_ADD;
         regfile_alu_we      = 1'b1;
         // Calculate jump target (= PC + UJ imm)
@@ -319,7 +335,10 @@ module cv32e40p_decoder
         // Calculate and store PC+4
         alu_op_a_mux_sel_o  = OP_A_CURRPC;
         alu_op_b_mux_sel_o  = OP_B_IMM;
+        alu_op_a_mux_sel_o2  = OP_A_CURRPC;
+        alu_op_b_mux_sel_o2  = OP_B_IMM;
         imm_b_mux_sel_o     = IMMB_PCINCR;
+        imm_b_mux_sel_o2     = IMMB_PCINCR;
         alu_operator_o      = ALU_ADD;
         regfile_alu_we      = 1'b1;
         // Calculate jump target (= RS1 + I imm)
@@ -370,6 +389,7 @@ module cv32e40p_decoder
         alu_op_c_mux_sel_o = OP_C_REGB_OR_FWD;
         // offset from immediate
         imm_b_mux_sel_o    = IMMB_S;
+        imm_b_mux_sel_o2    = IMMB_S;
         alu_op_b_mux_sel_o = OP_B_IMM;
 
         // store size
@@ -393,6 +413,7 @@ module cv32e40p_decoder
         // offset from immediate
         alu_op_b_mux_sel_o = OP_B_IMM;
         imm_b_mux_sel_o    = IMMB_I;
+        imm_b_mux_sel_o2    = IMMB_I;
 
         // sign/zero extension
         data_sign_extension_o = {1'b0,~instr_rdata_i[14]};
@@ -418,6 +439,7 @@ module cv32e40p_decoder
             regfile_mem_we    = 1'b1;
             prepost_useincr_o = 1'b0; // only use alu_operand_a as address (not a+b)
             alu_op_a_mux_sel_o = OP_A_REGA_OR_FWD;
+            alu_op_a_mux_sel_o2 = OP_A_REGA_OR_FWD;
 
             data_sign_extension_o = 1'b1;
 
@@ -466,6 +488,7 @@ module cv32e40p_decoder
         alu_op_b_mux_sel_o  = OP_B_IMM;
         imm_a_mux_sel_o     = IMMA_ZERO;
         imm_b_mux_sel_o     = IMMB_U;
+        imm_b_mux_sel_o2     = IMMB_U;
         alu_operator_o      = ALU_ADD;
         regfile_alu_we      = 1'b1;
       end
@@ -474,6 +497,7 @@ module cv32e40p_decoder
         alu_op_a_mux_sel_o  = OP_A_CURRPC;
         alu_op_b_mux_sel_o  = OP_B_IMM;
         imm_b_mux_sel_o     = IMMB_U;
+        imm_b_mux_sel_o2     = IMMB_U;
         alu_operator_o      = ALU_ADD;
         regfile_alu_we      = 1'b1;
       end
@@ -481,6 +505,7 @@ module cv32e40p_decoder
       OPCODE_OPIMM: begin // Register-Immediate ALU Operations
         alu_op_b_mux_sel_o  = OP_B_IMM;
         imm_b_mux_sel_o     = IMMB_I;
+        imm_b_mux_sel_o2     = IMMB_I;
         regfile_alu_we      = 1'b1;
         rega_used_o         = 1'b1;
 
@@ -969,24 +994,32 @@ module cv32e40p_decoder
             {6'b00_0001, 3'b100}: begin // div
               alu_op_a_mux_sel_o = OP_A_REGB_OR_FWD;
               alu_op_b_mux_sel_o = OP_B_REGA_OR_FWD;
+              alu_op_a_mux_sel_o2 = OP_A_REGB_OR_FWD;
+              alu_op_b_mux_sel_o2 = OP_B_REGA_OR_FWD;
               regb_used_o        = 1'b1;
               alu_operator_o     = ALU_DIV;
             end
             {6'b00_0001, 3'b101}: begin // divu
               alu_op_a_mux_sel_o = OP_A_REGB_OR_FWD;
               alu_op_b_mux_sel_o = OP_B_REGA_OR_FWD;
+              alu_op_a_mux_sel_o2 = OP_A_REGB_OR_FWD;
+              alu_op_b_mux_sel_o2 = OP_B_REGA_OR_FWD;
               regb_used_o        = 1'b1;
               alu_operator_o     = ALU_DIVU;
             end
             {6'b00_0001, 3'b110}: begin // rem
               alu_op_a_mux_sel_o = OP_A_REGB_OR_FWD;
               alu_op_b_mux_sel_o = OP_B_REGA_OR_FWD;
+              alu_op_a_mux_sel_o2 = OP_A_REGB_OR_FWD;
+              alu_op_b_mux_sel_o2 = OP_B_REGA_OR_FWD;
               regb_used_o        = 1'b1;
               alu_operator_o     = ALU_REM;
             end
             {6'b00_0001, 3'b111}: begin // remu
               alu_op_a_mux_sel_o = OP_A_REGB_OR_FWD;
               alu_op_b_mux_sel_o = OP_B_REGA_OR_FWD;
+              alu_op_a_mux_sel_o2 = OP_A_REGB_OR_FWD;
+              alu_op_b_mux_sel_o2 = OP_B_REGA_OR_FWD;
               regb_used_o        = 1'b1;
               alu_operator_o     = ALU_REMU;
             end
@@ -1510,6 +1543,7 @@ module cv32e40p_decoder
 
           // offset from immediate
           imm_b_mux_sel_o     = IMMB_S;
+          imm_b_mux_sel_o2     = IMMB_S;
           alu_op_b_mux_sel_o  = OP_B_IMM;
 
           // pass write data through ALU operand c
@@ -1553,6 +1587,7 @@ module cv32e40p_decoder
 
           // offset from immediate
           imm_b_mux_sel_o     = IMMB_I;
+          imm_b_mux_sel_o2     = IMMB_I;
           alu_op_b_mux_sel_o  = OP_B_IMM;
 
           // NaN boxing
@@ -1589,6 +1624,7 @@ module cv32e40p_decoder
           // offset from immediate
           alu_op_b_mux_sel_o = OP_B_IMM;
           imm_b_mux_sel_o    = IMMB_I;
+          imm_b_mux_sel_o2     = IMMB_I;
 
           // post-increment setup
           if (instr_rdata_i[13:12] != 2'b11) begin
@@ -1624,6 +1660,7 @@ module cv32e40p_decoder
           // offset from immediate
           alu_op_b_mux_sel_o             = OP_B_IMM;
           imm_b_mux_sel_o                = IMMB_BI;
+          imm_b_mux_sel_o2     = IMMB_BI;
 
           if (instr_rdata_i[12] == 1'b0) begin // cv.beqimm
             alu_operator_o      = ALU_EQ;
@@ -1648,6 +1685,7 @@ module cv32e40p_decoder
               alu_op_c_mux_sel_o      = OP_C_REGB_OR_FWD;
               // offset from immediate
               imm_b_mux_sel_o         = IMMB_S;
+              imm_b_mux_sel_o2         = IMMB_S;
               alu_op_b_mux_sel_o      = OP_B_IMM;
 
               // post-increment setup
@@ -1753,18 +1791,21 @@ module cv32e40p_decoder
                     3'b000: begin                                      // cv.extractr
                       alu_operator_o        = ALU_BEXT;
                       imm_b_mux_sel_o       = IMMB_S2;
+                      imm_b_mux_sel_o2       = IMMB_S2;
                       bmask_b_mux_o         = BMASK_B_ZERO;
                       alu_op_b_mux_sel_o    = OP_B_BMASK;
                     end
                     3'b001: begin                                      // cv.extractur
                       alu_operator_o        = ALU_BEXTU;
                       imm_b_mux_sel_o       = IMMB_S2;
+                      imm_b_mux_sel_o2       = IMMB_S2;
                       bmask_b_mux_o         = BMASK_B_ZERO;
                       alu_op_b_mux_sel_o    = OP_B_BMASK;
                     end
                     3'b010: begin                                      // cv.insertr
                       alu_operator_o        = ALU_BINS;
                       imm_b_mux_sel_o       = IMMB_S2;
+                      imm_b_mux_sel_o2       = IMMB_S2;
                       regc_used_o           = 1'b1;
                       regc_mux_o            = REGC_RD;
                       alu_op_b_mux_sel_o    = OP_B_BMASK;
@@ -1873,12 +1914,14 @@ module cv32e40p_decoder
                       alu_operator_o     = ALU_CLIP;
                       alu_op_b_mux_sel_o = OP_B_IMM;
                       imm_b_mux_sel_o    = IMMB_CLIP;
+                      imm_b_mux_sel_o2    = IMMB_CLIP;
                     end
                     5'b11001: begin                                    // cv.clipu
                       regb_used_o        = 1'b0;
                       alu_operator_o     = ALU_CLIPU;
                       alu_op_b_mux_sel_o = OP_B_IMM;
                       imm_b_mux_sel_o    = IMMB_CLIP;
+                      imm_b_mux_sel_o2    = IMMB_CLIP;
                     end
                     5'b11010: alu_operator_o = ALU_CLIP;               // cv.clipr
                     5'b11011: alu_operator_o = ALU_CLIPU;              // cv.clipur
@@ -1898,6 +1941,8 @@ module cv32e40p_decoder
                   alu_bmask_b_mux_sel_o = BMASK_B_REG;
                   alu_op_a_mux_sel_o    = OP_A_REGC_OR_FWD;
                   alu_op_b_mux_sel_o    = OP_B_REGA_OR_FWD;
+                  alu_op_a_mux_sel_o2    = OP_A_REGC_OR_FWD;
+                  alu_op_b_mux_sel_o2    = OP_B_REGA_OR_FWD;
 
                   unique case (instr_rdata_i[27:25])
                     3'b000: alu_operator_o = ALU_ADD;                  // cv.addNr
@@ -2042,16 +2087,19 @@ module cv32e40p_decoder
                 {2'b00, 1'b0}: begin                                       // cv.extract
                   alu_operator_o  = ALU_BEXT;
                   imm_b_mux_sel_o = IMMB_S2;
+                  imm_b_mux_sel_o2 = IMMB_S2;
                   bmask_b_mux_o   = BMASK_B_ZERO;
                 end
                 {2'b01, 1'b0}: begin                                       // cv.extractu
                   alu_operator_o  = ALU_BEXTU;
                   imm_b_mux_sel_o = IMMB_S2;
+                  imm_b_mux_sel_o2 = IMMB_S2;
                   bmask_b_mux_o   = BMASK_B_ZERO;
                 end
                 {2'b10, 1'b0}: begin                                       // cv.insert
                   alu_operator_o  = ALU_BINS;
                   imm_b_mux_sel_o = IMMB_S2;
+                  imm_b_mux_sel_o2 = IMMB_S2;
                   regc_used_o     = 1'b1;
                   regc_mux_o      = REGC_RD;
                 end
@@ -2068,6 +2116,7 @@ module cv32e40p_decoder
                   regc_mux_o            = REGC_RD;
                   // Extract the source register on operand a
                   imm_b_mux_sel_o       = IMMB_S2;
+                  imm_b_mux_sel_o2 = IMMB_S2;
                   // Map the radix to bmask_a immediate
                   alu_bmask_a_mux_sel_o = BMASK_A_IMM;
                   if (instr_rdata_i[29:27] != 3'b0) begin
@@ -2138,6 +2187,7 @@ module cv32e40p_decoder
           regfile_alu_we      = 1'b1;
           rega_used_o         = 1'b1;
           imm_b_mux_sel_o     = IMMB_VS;
+          imm_b_mux_sel_o2     = IMMB_VS;
 
           alu_vec_o = 1'b1;
           // vector size
@@ -2170,6 +2220,7 @@ module cv32e40p_decoder
             6'b00000_0: begin // cv.add
               alu_operator_o = ALU_ADD;
               imm_b_mux_sel_o = IMMB_VS;
+              imm_b_mux_sel_o2 = IMMB_VS;
               if (instr_rdata_i[14:12] == 3'b010 || instr_rdata_i[14:12] == 3'b011) begin
                 illegal_insn_o = 1'b1;
               end
@@ -2181,6 +2232,7 @@ module cv32e40p_decoder
             6'b00001_0: begin // cv.sub
               alu_operator_o = ALU_SUB;
               imm_b_mux_sel_o = IMMB_VS;
+              imm_b_mux_sel_o2 = IMMB_VS;
               if (instr_rdata_i[14:12] == 3'b010 || instr_rdata_i[14:12] == 3'b011) begin
                 illegal_insn_o = 1'b1;
               end
@@ -2192,6 +2244,7 @@ module cv32e40p_decoder
             6'b00010_0: begin // cv.avg
               alu_operator_o = ALU_ADD;
               imm_b_mux_sel_o = IMMB_VS;
+              imm_b_mux_sel_o2 = IMMB_VS;
               bmask_b_mux_o = BMASK_B_ONE;
               if (instr_rdata_i[14:12] == 3'b010 || instr_rdata_i[14:12] == 3'b011) begin
                 illegal_insn_o = 1'b1;
@@ -2204,6 +2257,7 @@ module cv32e40p_decoder
             6'b00011_0: begin // cv.avgu
              alu_operator_o = ALU_ADDU;
              imm_b_mux_sel_o = IMMB_VU;
+             imm_b_mux_sel_o2 = IMMB_VU;
              bmask_b_mux_o = BMASK_B_ONE;
              if (instr_rdata_i[14:12] == 3'b010 || instr_rdata_i[14:12] == 3'b011) begin
                illegal_insn_o = 1'b1;
@@ -2216,6 +2270,7 @@ module cv32e40p_decoder
             6'b00100_0: begin // cv.min
              alu_operator_o = ALU_MIN;
              imm_b_mux_sel_o = IMMB_VS;
+             imm_b_mux_sel_o2 = IMMB_VS;
              if (instr_rdata_i[14:12] == 3'b010 || instr_rdata_i[14:12] == 3'b011) begin
                illegal_insn_o = 1'b1;
              end
@@ -2227,6 +2282,7 @@ module cv32e40p_decoder
             6'b00101_0: begin // cv.minu
               alu_operator_o = ALU_MINU;
               imm_b_mux_sel_o = IMMB_VU;
+              imm_b_mux_sel_o2 = IMMB_VU;
               if (instr_rdata_i[14:12] == 3'b010 || instr_rdata_i[14:12] == 3'b011) begin
                 illegal_insn_o = 1'b1;
               end
@@ -2238,6 +2294,7 @@ module cv32e40p_decoder
             6'b00110_0: begin // cv.max
               alu_operator_o = ALU_MAX;
               imm_b_mux_sel_o = IMMB_VS;
+              imm_b_mux_sel_o2 = IMMB_VS;
               if (instr_rdata_i[14:12] == 3'b010 || instr_rdata_i[14:12] == 3'b011) begin
                 illegal_insn_o = 1'b1;
               end
@@ -2249,6 +2306,7 @@ module cv32e40p_decoder
             6'b00111_0: begin // cv.maxu
               alu_operator_o = ALU_MAXU;
               imm_b_mux_sel_o = IMMB_VU;
+              imm_b_mux_sel_o2 = IMMB_VU;
               if (instr_rdata_i[14:12] == 3'b010 || instr_rdata_i[14:12] == 3'b011) begin
                 illegal_insn_o = 1'b1;
               end
@@ -2260,6 +2318,7 @@ module cv32e40p_decoder
             6'b01000_0: begin // cv.srl
               alu_operator_o = ALU_SRL;
               imm_b_mux_sel_o = IMMB_VS;
+              imm_b_mux_sel_o2 = IMMB_VS;
               if (instr_rdata_i[14:12] == 3'b010 || instr_rdata_i[14:12] == 3'b011) begin
                 illegal_insn_o = 1'b1;
               end
@@ -2271,6 +2330,7 @@ module cv32e40p_decoder
             6'b01001_0: begin // cv.sra
               alu_operator_o = ALU_SRA;
               imm_b_mux_sel_o = IMMB_VS;
+              imm_b_mux_sel_o2 = IMMB_VS;
               if (instr_rdata_i[14:12] == 3'b010 || instr_rdata_i[14:12] == 3'b011) begin
                 illegal_insn_o = 1'b1;
               end
@@ -2282,6 +2342,7 @@ module cv32e40p_decoder
             6'b01010_0: begin // cv.sll
               alu_operator_o = ALU_SLL;
               imm_b_mux_sel_o = IMMB_VS;
+              imm_b_mux_sel_o2 = IMMB_VS;
               if (instr_rdata_i[14:12] == 3'b010 || instr_rdata_i[14:12] == 3'b011) begin
                 illegal_insn_o = 1'b1;
               end
@@ -2293,6 +2354,7 @@ module cv32e40p_decoder
             6'b01011_0: begin // cv.or
               alu_operator_o = ALU_OR;
               imm_b_mux_sel_o = IMMB_VS;
+              imm_b_mux_sel_o2 = IMMB_VS;
               if (instr_rdata_i[14:12] == 3'b010 || instr_rdata_i[14:12] == 3'b011) begin
                 illegal_insn_o = 1'b1;
               end
@@ -2304,6 +2366,7 @@ module cv32e40p_decoder
             6'b01100_0: begin // cv.xor
               alu_operator_o = ALU_XOR;
               imm_b_mux_sel_o = IMMB_VS;
+              imm_b_mux_sel_o2 = IMMB_VS;
               if (instr_rdata_i[14:12] == 3'b010 || instr_rdata_i[14:12] == 3'b011) begin
                 illegal_insn_o = 1'b1;
               end
@@ -2315,6 +2378,7 @@ module cv32e40p_decoder
             6'b01101_0: begin // cv.and
               alu_operator_o = ALU_AND;
               imm_b_mux_sel_o = IMMB_VS;
+              imm_b_mux_sel_o2 = IMMB_VS;
               if (instr_rdata_i[14:12] == 3'b010 || instr_rdata_i[14:12] == 3'b011) begin
                 illegal_insn_o = 1'b1;
               end
@@ -2326,6 +2390,7 @@ module cv32e40p_decoder
             6'b01110_0: begin // cv.abs
               alu_operator_o = ALU_ABS;
               imm_b_mux_sel_o = IMMB_VS;
+              imm_b_mux_sel_o2 = IMMB_VS;
               if (instr_rdata_i[14:12] != 3'b000 && instr_rdata_i[14:12] != 3'b001) begin
                 illegal_insn_o = 1'b1;
               end
@@ -2338,6 +2403,7 @@ module cv32e40p_decoder
               mult_dot_en       = 1'b1;
               mult_dot_signed_o = 2'b00;
               imm_b_mux_sel_o   = IMMB_VU;
+              imm_b_mux_sel_o2 = IMMB_VU;
               if (instr_rdata_i[14:12] == 3'b010 || instr_rdata_i[14:12] == 3'b011) begin
                 illegal_insn_o = 1'b1;
               end
@@ -2377,6 +2443,7 @@ module cv32e40p_decoder
               regc_used_o       = 1'b1;
               regc_mux_o        = REGC_RD;
               imm_b_mux_sel_o   = IMMB_VU;
+              imm_b_mux_sel_o2 = IMMB_VU;
               if (instr_rdata_i[14:12] == 3'b010 || instr_rdata_i[14:12] == 3'b011) begin
                 illegal_insn_o = 1'b1;
               end
@@ -2429,6 +2496,7 @@ module cv32e40p_decoder
             6'b11000_0: begin // cv.shuffle, cv.shuffleI0
               alu_operator_o       = ALU_SHUF;
               imm_b_mux_sel_o      = IMMB_SHUF;
+              imm_b_mux_sel_o2      = IMMB_SHUF;
               regb_used_o          = 1'b1;
               scalar_replication_o = 1'b0;
               if (instr_rdata_i[14:12] == 3'b010 || instr_rdata_i[14:12] == 3'b011 ||
@@ -2445,6 +2513,7 @@ module cv32e40p_decoder
             6'b11011_0: begin // cv.shuffleI1 cv.shuffleI2 cv.shuffleI3
               alu_operator_o       = ALU_SHUF;
               imm_b_mux_sel_o      = IMMB_SHUF;
+              imm_b_mux_sel_o2      = IMMB_SHUF;
               regb_used_o          = 1'b1;
               scalar_replication_o = 1'b0;
               if (instr_rdata_i[14:12] != 3'b111) begin
@@ -2485,6 +2554,7 @@ module cv32e40p_decoder
             6'b00000_1: begin // cv.cmpeq
               alu_operator_o  = ALU_EQ;
               imm_b_mux_sel_o = IMMB_VS;
+              imm_b_mux_sel_o2 = IMMB_VS;
               if (instr_rdata_i[14:12] == 3'b010 || instr_rdata_i[14:12] == 3'b011) begin
                 illegal_insn_o = 1'b1;
               end
@@ -2496,6 +2566,7 @@ module cv32e40p_decoder
             6'b00001_1: begin // cv.cmpne
               alu_operator_o  = ALU_NE;
               imm_b_mux_sel_o = IMMB_VS;
+              imm_b_mux_sel_o2 = IMMB_VS;
               if (instr_rdata_i[14:12] == 3'b010 || instr_rdata_i[14:12] == 3'b011) begin
                 illegal_insn_o = 1'b1;
               end
@@ -2507,6 +2578,7 @@ module cv32e40p_decoder
             6'b00010_1: begin // cv.cmpgt
               alu_operator_o  = ALU_GTS;
               imm_b_mux_sel_o = IMMB_VS;
+              imm_b_mux_sel_o2 = IMMB_VS;
               if (instr_rdata_i[14:12] == 3'b010 || instr_rdata_i[14:12] == 3'b011) begin
                 illegal_insn_o = 1'b1;
               end
@@ -2518,6 +2590,7 @@ module cv32e40p_decoder
             6'b00011_1: begin // cv.cmpge
               alu_operator_o  = ALU_GES;
               imm_b_mux_sel_o = IMMB_VS;
+              imm_b_mux_sel_o2 = IMMB_VS;
               if (instr_rdata_i[14:12] == 3'b010 || instr_rdata_i[14:12] == 3'b011) begin
                 illegal_insn_o = 1'b1;
               end
@@ -2529,6 +2602,7 @@ module cv32e40p_decoder
             6'b00100_1: begin // cv.cmplt
               alu_operator_o  = ALU_LTS;
               imm_b_mux_sel_o = IMMB_VS;
+              imm_b_mux_sel_o2 = IMMB_VS;
               if (instr_rdata_i[14:12] == 3'b010 || instr_rdata_i[14:12] == 3'b011) begin
                 illegal_insn_o = 1'b1;
               end
@@ -2540,6 +2614,7 @@ module cv32e40p_decoder
             6'b00101_1: begin // cv.cmple
               alu_operator_o  = ALU_LES;
               imm_b_mux_sel_o = IMMB_VS;
+              imm_b_mux_sel_o2 = IMMB_VS;
               if (instr_rdata_i[14:12] == 3'b010 || instr_rdata_i[14:12] == 3'b011) begin
                 illegal_insn_o = 1'b1;
               end
@@ -2551,6 +2626,7 @@ module cv32e40p_decoder
             6'b00110_1: begin // cv.cmpgtu
               alu_operator_o  = ALU_GTU;
               imm_b_mux_sel_o = IMMB_VU;
+              imm_b_mux_sel_o2 = IMMB_VU;
               if (instr_rdata_i[14:12] == 3'b010 || instr_rdata_i[14:12] == 3'b011) begin
                 illegal_insn_o = 1'b1;
               end
@@ -2562,6 +2638,7 @@ module cv32e40p_decoder
             6'b00111_1: begin // cv.cmpgeu
               alu_operator_o  = ALU_GEU;
               imm_b_mux_sel_o = IMMB_VU;
+              imm_b_mux_sel_o2 = IMMB_VU;
               if (instr_rdata_i[14:12] == 3'b010 || instr_rdata_i[14:12] == 3'b011) begin
                 illegal_insn_o = 1'b1;
               end
@@ -2573,6 +2650,7 @@ module cv32e40p_decoder
             6'b01000_1: begin // cv.cmpltu
               alu_operator_o  = ALU_LTU;
               imm_b_mux_sel_o = IMMB_VU;
+              imm_b_mux_sel_o2 = IMMB_VU;
               if (instr_rdata_i[14:12] == 3'b010 || instr_rdata_i[14:12] == 3'b011) begin
                 illegal_insn_o = 1'b1;
               end
@@ -2584,6 +2662,7 @@ module cv32e40p_decoder
             6'b01001_1: begin // cv.cmpleu
               alu_operator_o  = ALU_LEU;
               imm_b_mux_sel_o = IMMB_VU;
+              imm_b_mux_sel_o2 = IMMB_VU;
               if (instr_rdata_i[14:12] == 3'b010 || instr_rdata_i[14:12] == 3'b011) begin
                 illegal_insn_o = 1'b1;
               end
@@ -2730,6 +2809,7 @@ module cv32e40p_decoder
                   // i.e. keep regfile_alu_we = 0, rega_used_o = 0
                   alu_op_b_mux_sel_o = OP_B_IMM;
                   imm_b_mux_sel_o = IMMB_I;
+                  imm_b_mux_sel_o2 = IMMB_I;
                   alu_operator_o = ALU_ADD;
                 end
               end
@@ -2746,13 +2826,16 @@ module cv32e40p_decoder
           alu_op_b_mux_sel_o  = OP_B_IMM;
           imm_a_mux_sel_o     = IMMA_Z;
           imm_b_mux_sel_o     = IMMB_I;    // CSR address is encoded in I imm
+          imm_b_mux_sel_o2 = IMMB_I;
 
           if (instr_rdata_i[14] == 1'b1) begin
             // rs1 field is used as immediate
             alu_op_a_mux_sel_o = OP_A_IMM;
+            alu_op_a_mux_sel_o2 = OP_A_IMM;
           end else begin
             rega_used_o        = 1'b1;
             alu_op_a_mux_sel_o = OP_A_REGA_OR_FWD;
+            alu_op_a_mux_sel_o2 = OP_A_REGA_OR_FWD;
           end
 
           // instr_rdata_i[19:14] = rs or immediate value
@@ -2975,6 +3058,22 @@ module cv32e40p_decoder
     // make sure invalid compressed instruction causes an exception
     if (illegal_c_insn_i) begin
       illegal_insn_o = 1'b1;
+    end
+
+    if(alu_op_a_mux_sel_o != alu_op_a_mux_sel_o2) begin
+      error_detected_decod1 = 1;
+    end else begin
+      error_detected_decod1 = 0;
+    end
+    if(alu_op_b_mux_sel_o != alu_op_b_mux_sel_o2) begin
+      error_detected_decod2 = 1;
+    end else begin
+      error_detected_decod2 = 0;
+    end
+    if(imm_b_mux_sel_o != imm_b_mux_sel_o2) begin
+      error_detected_decod3 = 1;
+    end else begin
+      error_detected_decod3 = 0;
     end
 
   end

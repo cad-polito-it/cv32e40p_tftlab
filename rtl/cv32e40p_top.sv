@@ -64,7 +64,48 @@ module cv32e40p_top #(
 
     // CPU Control Signals
     input  logic fetch_enable_i,
-    output logic core_sleep_o
+    output logic core_sleep_o,
+    //Error Detection Ports
+    output logic error_detected_ex1,
+    output logic error_detected_alu,
+    output logic error_detected_alu2,
+    output logic error_detected_alu3,
+    output logic error_detected_alu4,
+    output logic error_detected_alu5,
+    output logic error_detected_alu6,
+    output logic error_detected_alu7,
+    output logic error_detected_alu8,
+    output logic error_detected_mult,
+    output logic error_detected_mult2,
+    output logic error_detected_mult3,
+    output logic error_detected_mult4,
+    output logic error_detected_mult5,
+    output logic error_detected_mult6,
+    output logic error_detected_mult7,
+    output logic error_detected_mult8,
+    output logic error_detected_if1,
+    output logic error_detected_if2,
+    output logic error_detected_dec,
+    output logic error_detected_dec2,
+    output logic error_detected_dec3,
+    output logic error_detected_dec4,
+    output logic error_detected_dec5,
+    output logic error_detected_dec6,
+    output logic error_detected_dec7,
+    output logic error_detected_dec8,
+    output logic error_detected_id1,
+    output logic error_detected_id2,
+    output logic error_detected_id3,
+
+    output logic [5:0]			error_parity_regfile_o,
+	  //output logic [3:0]			error_decoder_o,
+	  output logic [2:0]			error_parity_id_ex_stage_o,
+	  output logic [3:0]			error_load_store_o,
+	  output logic 				error_prefech_buffer_parity_o,
+
+    output logic error_detected_decod1,
+    output logic error_detected_decod2,
+    output logic error_detected_decod3
 );
 
   import cv32e40p_apu_core_pkg::*;
@@ -138,7 +179,48 @@ module cv32e40p_top #(
       .debug_halted_o   (debug_halted_o),
 
       .fetch_enable_i(fetch_enable_i),
-      .core_sleep_o  (core_sleep_o)
+      .core_sleep_o  (core_sleep_o),
+      
+      .error_detected_ex1(error_detected_ex1),
+      .error_detected_alu (error_detected_alu),
+      .error_detected_alu2 (error_detected_alu2),
+      .error_detected_alu3(error_detected_alu3),
+      .error_detected_alu4(error_detected_alu4),
+      .error_detected_alu5(error_detected_alu5),
+      .error_detected_alu6(error_detected_alu6),
+      .error_detected_alu7(error_detected_alu7),
+      .error_detected_alu8(error_detected_alu8),
+      .error_detected_mult(error_detected_mult),
+      .error_detected_mult2(error_detected_mult2),
+      .error_detected_mult3(error_detected_mult3),
+      .error_detected_mult4(error_detected_mult4),
+      .error_detected_mult5(error_detected_mult5),
+      .error_detected_mult6(error_detected_mult6),
+      .error_detected_mult7(error_detected_mult7),
+      .error_detected_mult8(error_detected_mult8),
+      .error_detected_if1(error_detected_if1),
+      .error_detected_if2(error_detected_if2),
+      .error_detected_dec(error_detected_dec),
+      .error_detected_dec2(error_detected_dec2),
+      .error_detected_dec3(error_detected_dec3),
+      .error_detected_dec4(error_detected_dec4),
+      .error_detected_dec5(error_detected_dec5),
+      .error_detected_dec6(error_detected_dec6),
+      .error_detected_dec7(error_detected_dec7),
+      .error_detected_dec8(error_detected_dec8),
+      .error_detected_id1(error_detected_id1),
+      .error_detected_id2(error_detected_id2),
+      .error_detected_id3(error_detected_id3),
+
+      .error_parity_regfile_o(error_parity_regfile_o),
+	    //.error_decoder_o(error_decoder_o),
+	    .error_parity_id_ex_stage_o(error_parity_id_ex_stage_o),
+	    .error_load_store_o(error_load_store_o),
+	    .error_prefech_buffer_parity_o(error_prefech_buffer_parity_o),
+
+      .error_detected_decod1(error_detected_decod1),
+      .error_detected_decod2(error_detected_decod2),
+      .error_detected_decod3(error_detected_decod3)
   );
 
   generate

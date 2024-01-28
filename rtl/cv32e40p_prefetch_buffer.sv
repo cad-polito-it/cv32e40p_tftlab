@@ -52,7 +52,9 @@ module cv32e40p_prefetch_buffer #(
     input  logic        instr_err_pmp_i,  // Not used yet (future addition)
 
     // Prefetch Buffer Status
-    output logic busy_o
+    output logic busy_o,
+
+    output logic 		error_prefech_buffer_parity_o
 );
   // FIFO_DEPTH controls also the number of outstanding memory requests
   // FIFO_DEPTH must be greater than 1 to respect assertion in prefetch controller
@@ -136,7 +138,9 @@ module cv32e40p_prefetch_buffer #(
       .data_i           (resp_rdata),
       .push_i           (fifo_push),
       .data_o           (fifo_rdata),
-      .pop_i            (fifo_pop)
+      .pop_i            (fifo_pop),
+
+      .error_prefech_buffer_parity_o(error_prefech_buffer_parity_o)
   );
 
   // First POP from the FIFO if it is not empty.

@@ -50,11 +50,13 @@ module cv32e40p_alu
 
     output logic ready_o,
     input  logic ex_ready_i
+    //output logic error_detected_o
 );
 
   logic [31:0] operand_a_rev;
   logic [31:0] operand_a_neg;
   logic [31:0] operand_a_neg_rev;
+  //logic error_detected_w1, error_detected_w2, error_detected_w3;
 
   assign operand_a_neg = ~operand_a_i;
 
@@ -746,6 +748,19 @@ module cv32e40p_alu
       .result_o(cnt_result)
   );
 
+//  logic [5:0] cnt_result2;
+//
+//  cv32e40p_popcnt popcnt_i2 (
+//      .in_i    (operand_a_i),
+//      .result_o(cnt_result2)
+//  );
+//
+//always_comb begin
+//  if (cnt_result2 != cnt_result) begin
+//    error_detected_w1 = 1;
+//  end
+//end
+
   always_comb begin
     ff_input = '0;
 
@@ -766,6 +781,21 @@ module cv32e40p_alu
       .first_one_o(ff1_result),
       .no_ones_o  (ff_no_one)
   );
+
+//  logic [4:0] ff1_result2;
+//  logic ff_no_one2;
+//
+//  cv32e40p_ff_one ff_one_i2 (
+//      .in_i       (ff_input),
+//      .first_one_o(ff1_result2),
+//      .no_ones_o  (ff_no_one2)
+//  );
+//
+//always_comb begin
+//  if (ff1_result2 != ff1_result || ff_no_one2 != ff_no_one) begin
+//    error_detected_w2 = 1;
+//  end
+//end
 
   // special case if ff1_res is 0 (no 1 found), then we keep the 0
   // this is done in the result mux
@@ -915,6 +945,42 @@ module cv32e40p_alu
       .OutRdy_SI(ex_ready_i),
       .OutVld_SO(div_ready)
   );
+
+//  logic div_ready2;
+//  logic [31:0] result_div2;
+//
+//  cv32e40p_alu_div alu_div_i2 (
+//      .Clk_CI (clk),
+//      .Rst_RBI(rst_n),
+//
+//      // input IF
+//      .OpA_DI      (operand_b_i),
+//      .OpB_DI      (shift_left_result),
+//      .OpBShift_DI (div_shift),
+//      .OpBIsZero_SI((cnt_result == 0)),
+//
+//      .OpBSign_SI(div_op_a_signed),
+//      .OpCode_SI (operator_i[1:0]),
+//
+//      .Res_DO(result_div2),
+//
+//      // Hand-Shake
+//      .InVld_SI (div_valid),
+//      .OutRdy_SI(ex_ready_i),
+//      .OutVld_SO(div_ready2)
+//  );
+
+//always_comb begin
+//  if (div_ready2 != div_ready || result_div2 != result_div) begin
+//    error_detected_w3 = 1;
+//  end
+//end
+//
+//always_comb begin
+//  if (error_detected_w3 == 1 || error_detected_w2 == 1 || error_detected_w1 == 1) begin
+//    error_detected_o = 1;
+//  end
+//end
 
   ////////////////////////////////////////////////////////
   //   ____                 _ _     __  __              //
