@@ -6,7 +6,7 @@ RISCV_EXE_PREFIX         = $(RISCV)/bin/riscv32-unknown-elf-
 all: $(PROGRAM_NAME).hex
 
 $(PROGRAM_NAME).elf: crt0.S main.c syscalls.c vectors.S tests/*.S
-	$(RISCV_EXE_PREFIX)gcc -march=rv32imc -o $@ -w -Os -g -nostdlib \
+	$(RISCV_EXE_PREFIX)gcc -march=rv32imcxpulpv2 -o $@ -w -Os -g -nostdlib \
 		-Xlinker -Map=$(PROGRAM_NAME).map \
 		-T link.ld \
 		-static \
