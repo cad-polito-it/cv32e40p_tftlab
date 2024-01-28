@@ -32,8 +32,15 @@ module cv32e40p_tb_subsystem #(
     output logic        tests_failed_o,
     output logic [31:0] exit_value_o,
     output logic        exit_valid_o
-);
+);    
 
+    //Scan-Chain-related timings
+
+    const time strobe = 4ns;
+    const time read = 6ns;
+    const time strobe2 = 2ns;
+    const time read2 = 3ns;
+    
   // signals connecting core to memory
   logic                               instr_req;
   logic                               instr_gnt;
@@ -64,7 +71,23 @@ module cv32e40p_tb_subsystem #(
 
   logic                               core_sleep_o;
 
+  logic test_si1, test_se, test_mode;
 
+  initial begin : test_gen
+    forever begin
+      #strobe test_si1 = 1'b1;
+      #read test_si1 = 1'b0;
+    end
+  end : test_gen
+  /*initial begin : en_gen
+    forever begin
+      #strobe2 test_se = 1'b1; test_mode = 1'b1;
+      #read2 test_se = 1'b0; test_mode = 1'b0;
+    end
+  end : en_gen*/
+
+  assign test_se = 1'b0;
+  assign test_mode = 1'b0;
 
 
   assign debug_req_i = 1'b0;
@@ -116,7 +139,10 @@ module cv32e40p_tb_subsystem #(
       .debug_halted_o   (),
 
       .fetch_enable_i(fetch_enable_i),
-      .core_sleep_o  (core_sleep_o)
+      .core_sleep_o  (core_sleep_o),
+      .test_si1(test_si1),
+      .test_se(test_se),
+      .test_mode(test_mode)
   );
 
 
