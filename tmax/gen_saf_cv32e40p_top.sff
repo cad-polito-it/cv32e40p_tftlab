@@ -1,0 +1,19 @@
+#*******************************************************************************
+# (c) 2017 Synopsys, Inc.
+#
+# This file and it's contents are proprietary to Synopsys, Inc. and may 
+# only be used pursuant to the terms and conditions of a written license 
+# agreement with Synopsys, Inc. All other use, reproduction, modification, 
+# or distribution of this file is strictly prohibited.
+#*******************************************************************************
+
+# Set fault generation constraints
+FaultGenerate
+{
+    #NA [0,1] { PORT "cv32e40p_top.core_i.ex_stage_i.alu_i.**" } 
+    #NA [0,1] { PORT "cv32e40p_top.core_i.ex_stage_i.mult_i.**" }
+    #NA [0,1] { PORT "cv32e40p_top.core_i.ex_stage_i.apu_disp_i.**" }
+    #NA [0,1] { PORT "cv32e40p_top.core_i.id_stage_i.register_file_i.**" }    
+    NA [0,1] { PORT "cv32e40p_top.core_i.**" } 
+    #NA [0,1] { PORT "cv32e40p_top.**" }  
+}

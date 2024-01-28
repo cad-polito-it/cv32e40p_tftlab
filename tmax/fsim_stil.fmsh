@@ -1,0 +1,31 @@
+# Enable Fault Manager Verbosity 
+set(var=[resources], messages=[all])
+# Enhanced Synopsys Format 
+set(var=[defines], format=[standard])
+# Import Fault List 
+set(var=[fdef], method=[fr], fr.fr=[$FAULT_LIST],abort=[error])
+# Disable Hyperfaults 
+set(var=[fsim],hyperfault=[0])
+# Stimulus Verification
+set(var=[defines],stim.verify=[1])
+#Scan-Chain-related syntax
+set(var=[defines],stim.serial=[0])
+
+set(var=[defines], stim.verbose=[1])
+
+set(var=[fsim],summary=[all])
+ 
+design()
+
+addtst(test=[atpg], 
+stimtype=[stil],
+stim=[$STIL],
+dut.stim=[cv32e40p_top],
+stim_options=[+TESTNAME=atpg])
+
+fsim(test=[*])
+
+coverage(file=[$FAULT_LIST.fsim])
+coverage(file=[$FAULT_LIST.hier], hierarchical=[0],faultlimit=[100])
+
+coverage(file=[coverage.rpt], mincov=[0])
