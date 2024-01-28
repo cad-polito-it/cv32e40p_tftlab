@@ -160,7 +160,8 @@ questa/%: export TOP = $(TOP_LEVEL)
 questa/compile: DEFINE_FUNCTIONAL = +define+functional
 questa/compile: VWORK_GATE         = work_gate
 
-questa/compile: .questa-compile-rtl .questa-compile-gate
+#questa/compile: .questa-compile-rtl .questa-compile-gate
+questa/compile: .questa-compile-gate
 
 questa/compile-timing: VOPT_SDF   = -sdftyp $(SDF_TOP)=$(SDF)
 questa/compile-timing: VWORK_GATE = work_gate_timing
